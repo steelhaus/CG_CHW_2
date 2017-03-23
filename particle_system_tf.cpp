@@ -5,6 +5,7 @@
 CParticleSystemTransformFeedback::CParticleSystemTransformFeedback()
 {
 	bInitialized = false;
+	bStopped = false;
 	iCurReadBuffer = 0;
 }
 
@@ -129,8 +130,8 @@ void CParticleSystemTransformFeedback::UpdateParticles(float fTimePassed)
 	spUpdateParticles.SetUniform("iNumToGenerate",			0);
 
 	fElapsedTime += fTimePassed;
-
-	if(fElapsedTime > fNextGenerationTime)
+	
+	if(!bStopped && fElapsedTime > fNextGenerationTime)
 	{
 		spUpdateParticles.SetUniform("iNumToGenerate", iNumToGenerate);
 		fElapsedTime -= fNextGenerationTime;
@@ -286,7 +287,22 @@ int CParticleSystemTransformFeedback::GetNumParticles()
 }
 
 bool CParticleSystemTransformFeedback::ReleaseParticleSystem(){
-	spRenderParticles.DeleteProgram();
-	spUpdateParticles.DeleteProgram();
-	return true;
+	/*spRenderParticles.DeleteProgram();
+	spUpdateParticles.DeleteProgram();*/
+	return false;
+}
+
+void CParticleSystemTransformFeedback::ClearAllParticles(){
+	bStopped = true;
+	UpdateParticles(fGenLifeMin + fGenLifeRange);
+	RenderParticles();
+}
+
+void CParticleSystemTransformFeedback::ContinueGenParticles(){
+	bStopped = false;
+	fElapsedTime = 0.8f;
+}
+
+void CParticleSystemTransformFeedback::StopGenParticles(){
+	bStopped = true;
 }

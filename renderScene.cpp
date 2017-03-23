@@ -30,10 +30,11 @@ UINT uiVAOs[2]; //rendersceneobjects + boat
 
 CVertexBufferObject vboBoat;//, vboBoatInd;
 Boat *boat1;
-glm::vec3 boatPos;
-float fBoatPitch;
-float fBoatSpeed;
-glm::vec3 vBoatForward;
+glm::vec3 boatPos; //перемещение
+float fBoatPitch; //вращение по y
+float fBoatSpeed; //скорость
+glm::vec3 vBoatForward; //вектор направления движения (по носу)
+int iBoatMoving; //-1 for backward moving, 0 for idle, 1 for forward moving
 
 CTexture tTextures[NUMTEXTURES];
 CFlyingCamera cCamera;
@@ -42,7 +43,8 @@ CDirectionalLight dlSun;
 CSpotLight slFlashLight;
 CPointLight plLight, plLight2;
 
-CParticleSystemTransformFeedback psMainParticleSystem;
+
+
 CParticleSystemTransformFeedback psMainParticleSystem2;
 glm::vec3 particleColors[] = {
 	glm::vec3(0.0f,0.0f,1.0f),
@@ -54,6 +56,35 @@ bool renderParticles;
 
 #include "static_geometry.h"
 
+#define plumeSpreadAngle 70.0f
+#define plumeMaxLifeTime 3.0f
+CParticleSystemTransformFeedback psPlume; //шлейф за кораблем
+void updatePlumePosition(bool forwardMoving){
+	float fPositionMult = forwardMoving ? -35.0f : 20.0f;
+	//float fPositionMult = forwardMoving ? 28.0f : 30.0f;
+	psPlume.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) + vBoatForward * fPositionMult);
+}
+void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
+	float PI = float(atan(1.0)*4.0);
+	float fMainAngle = fBoatPitch + (forwardMoving ? 180.0f : 0.0f);
+	float fRightSpread = fMainAngle + fSpreadAngle;
+	float fLeftSpread = fMainAngle - fSpreadAngle;
+	float fMainSine = sin(fMainAngle/180.0f*PI);
+	float fMainCosine = cos(fMainAngle/180.0f*PI);
+	float fRightSine = sin(fRightSpread/180.0f*PI);
+	float fRightCosine = cos(fRightSpread/180.0f*PI);
+	float fLeftSine = sin(fLeftSpread/180.0f*PI);
+	float fLeftCosine = cos(fLeftSpread/180.0f*PI);
+	float fFwdSpeed = 25.0f;
+	float fSpreadSpeed = 20.0f;
+	glm::vec3 mainVec = glm::vec3(fMainSine, 0.0f, fMainCosine) * fFwdSpeed;
+	glm::vec3 rightVec = mainVec + glm::vec3(fRightSine, 0.0f, fRightCosine) * fSpreadSpeed;
+	glm::vec3 leftVec = mainVec + glm::vec3(fLeftSine, 0.2f, fLeftCosine) * fSpreadSpeed;
+	glm::vec3 minVel = glm::vec3(min(rightVec.x,leftVec.x),min(rightVec.y,leftVec.y),min(rightVec.z,leftVec.z));
+	glm::vec3 maxVel = glm::vec3(max(rightVec.x,leftVec.x),max(rightVec.y,leftVec.y),max(rightVec.z,leftVec.z));
+	psPlume.setGenVelocity(rightVec, leftVec);
+}
+
 // Initializes OpenGL features that will be used.
 // lpParam - Pointer to anything you want.
 void InitScene(LPVOID lpParam)
@@ -62,7 +93,7 @@ void InitScene(LPVOID lpParam)
 
 	// Prepare all scene objects
 	vboSceneObjects.CreateVBO();
-	glGenVertexArrays(2, uiVAOs); // Create one VAO
+	glGenVertexArrays(2, uiVAOs);
 	glBindVertexArray(uiVAOs[0]);
 
 	vboSceneObjects.BindVBO();
@@ -97,6 +128,7 @@ void InitScene(LPVOID lpParam)
 	boatPos = glm::vec3(20.0f, 49.0f, 150.0f);
 	fBoatPitch = 0.0f;
 	fBoatSpeed = 30.0f;
+	iBoatMoving = 0.0f;
 	vBoatForward = glm::vec3(0.0f,0.0f,1.0f);
 
 	if(!PrepareShaderPrograms())
@@ -128,42 +160,23 @@ void InitScene(LPVOID lpParam)
 	plLight = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f,10.0f,0.0f),0.15f,0.3f,0.007f,0.00008f);
 	plLight2 = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(0.0f,10.0f,30.0f),0.15f,0.3f,0.007f,0.00008f);
 	
-	psMainParticleSystem.InitalizeParticleSystem(); 
+	psPlume.InitalizeParticleSystem(); 
+	psPlume.SetGeneratorProperties( 
+		glm::vec3(0.0f, 0.0f, 0.0f), //location (calculate after)
+		glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), // min and max velocity (calculate after)
+		glm::vec3(0, -1, 0), // gravity
+		glm::vec3(0.0f, 0.5f, 1.0f), // color
+		1.5f, plumeMaxLifeTime, //lifetime min to max
+		0.75f, // Rendered size
+		0.02f, // Spawn every 0.05 seconds
+		30); // spawn 30 particles
+	psPlume.StopGenParticles();
+	//updatePlumePosition(true);
+	updatePlumeRotation(plumeSpreadAngle, true);
+	
+	renderParticles = true;
 
 
-	//балуюсь с вектором направления частиц
-	float PI = float(atan(1.0)*4.0);
-	float fPartAngle = 180.0f;
-	float fRightSpread = fPartAngle + 30.0f;
-	float fLeftSpread = fPartAngle - 30.0f;
-	float fMainSine = sin(fPartAngle/180.0f*PI);
-	float fMainCosine = cos(fPartAngle/180.0f*PI);
-	float fRightSine = sin(fRightSpread/180.0f*PI);
-	float fRightCosine = cos(fRightSpread/180.0f*PI);
-	float fLeftSine = sin(fLeftSpread/180.0f*PI);
-	float fLeftCosine = cos(fLeftSpread/180.0f*PI);
-	float fMainSpeed = 20.0f;
-	float fSpreadSpeed = 20.0f;
-	glm::vec3 mainVec = glm::vec3(fMainSine, 0.0f, fMainCosine) * fMainSpeed;
-	glm::vec3 rightVec = mainVec + glm::vec3(fRightSine, 0.0f, fRightCosine) * fSpreadSpeed;
-	glm::vec3 leftVec = mainVec + glm::vec3(fLeftSine, 0.0f, fLeftCosine) * fSpreadSpeed;
-	glm::vec3  minVel = rightVec;
-	glm::vec3  maxVel = leftVec;
-	//glm::vec3 minVel = glm::vec3(rightVec.x < leftVec.x ? rightVec.x : leftVec.x, 0.0f, rightVec.z < leftVec.z ? rightVec.z : leftVec.z);
-	//glm::vec3 maxVel = glm::vec3(rightVec.x > leftVec.x ? rightVec.x : leftVec.x, 10.0f, rightVec.z > leftVec.z ? rightVec.z : leftVec.z);
-
-   psMainParticleSystem.SetGeneratorProperties( 
-      glm::vec3(0.0f, 27.5f, 0.0f), // Where the particles are generated
-	  minVel, maxVel,
-      //glm::vec3(-5, 0, -50), // Minimal velocity
-      //glm::vec3(5, 10, -30), // Maximal velocity
-      glm::vec3(0, -1, 0), // Gravity force applied to particles
-      glm::vec3(0.0f, 0.5f, 1.0f), // Color (light blue)
-      1.5f, // Minimum lifetime in seconds
-      3.0f, // Maximum lifetime in seconds
-      0.75f, // Rendered size
-      0.02f, // Spawn every 0.05 seconds
-      30); // And spawn 30 particles
 
    psMainParticleSystem2.InitalizeParticleSystem(); 
 
@@ -179,7 +192,7 @@ void InitScene(LPVOID lpParam)
       0.02f, // Spawn every 0.05 seconds
       30); // And spawn 30 particles
 
-   renderParticles = false;
+   
 }
 
 float fGlobalAngle;
@@ -302,11 +315,57 @@ void RenderScene(LPVOID lpParam)
 	spMain.SetUniform("matrices.modelMatrix", &mModelMatrix);
 	glDrawArrays(GL_TRIANGLES, 42 + iTorusFaces * 3, iTorusFaces2 * 3);
 
+
+
+	//moving boat
+	bool fwd = Keys::Key(VK_UP);
+	bool bwd = Keys::Key(VK_DOWN);
+	bool rght = Keys::Key(VK_RIGHT);
+	bool lft = Keys::Key(VK_LEFT);
+	int iNewMoving = 0;
+	if(fwd || bwd) //узнаем, движется ли лодка сейчас
+		iNewMoving = fwd && bwd ? 0 : fwd? 1 : -1;
+
+	if(iBoatMoving != iNewMoving){ //состояние лодки изменилось
+		switch (iNewMoving){
+		case -1: //начала движение назад
+			psPlume.ContinueGenParticles();
+			updatePlumeRotation(plumeSpreadAngle, false);
+			break;
+		case 0: //остановилась
+			psPlume.StopGenParticles();
+			break;
+		case 1: //начала движение вперед
+			psPlume.ContinueGenParticles();
+			updatePlumeRotation(plumeSpreadAngle, true);
+			break;
+		}
+	}
+	iBoatMoving = iNewMoving;
+
+	if(iBoatMoving != 0){ //если движется, то можем ее поворачивать и зименять расположение
+		if (lft){
+			fBoatPitch += appMain.sof(40);
+			float fSine = sin(fBoatPitch/180.0f*PI);
+			float fCosine = cos(fBoatPitch/180.0f*PI);
+			vBoatForward = glm::vec3(fSine,0.0f,fCosine);
+		}
+		if (rght){
+			fBoatPitch -= appMain.sof(40);
+			float fSine = sin(fBoatPitch/180.0f*PI);
+			float fCosine = cos(fBoatPitch/180.0f*PI);
+			vBoatForward = glm::vec3(fSine,0.0f,fCosine);
+		}
+		boatPos += (float)iBoatMoving * vBoatForward * fBoatSpeed * appMain.sof(1);
+		if (lft || rght) updatePlumeRotation(plumeSpreadAngle, iBoatMoving == 1);
+		updatePlumePosition(iBoatMoving == 1);
+	}
+
 	if (renderParticles){
 		tTextures[5].BindTexture();
-		psMainParticleSystem.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
-		psMainParticleSystem.UpdateParticles(appMain.sof(1.0f));
-		psMainParticleSystem.RenderParticles();
+		psPlume.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
+		psPlume.UpdateParticles(appMain.sof(1.0f));
+		psPlume.RenderParticles();
 
 		//psMainParticleSystem2.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
 		//psMainParticleSystem2.UpdateParticles(appMain.sof(1.0f));
@@ -317,23 +376,7 @@ void RenderScene(LPVOID lpParam)
 	if(Keys::Onekey('F'))
 		slFlashLight.bOn = 1-slFlashLight.bOn;
 
-	if(Keys::Key('I'))
-		psMainParticleSystem.AddGeneratorPosition(glm::vec3(0.0f,0.0f,appMain.sof(60.0f)));
-		//plLight2.vPosition += glm::vec3(0.0f,0.0f,appMain.sof(60.0f));
-	if(Keys::Key('K'))
-		psMainParticleSystem.AddGeneratorPosition(glm::vec3(0.0f,0.0f,appMain.sof(-60.0f)));
-		//plLight2.vPosition += glm::vec3(0.0f,0.0f,appMain.sof(-60.0f));
-	if(Keys::Key('J'))
-		psMainParticleSystem.AddGeneratorPosition(glm::vec3(appMain.sof(60.0f),0.0f,0.0f));
-		//plLight2.vPosition += glm::vec3(appMain.sof(60.0f),0.0f,0.0f);
-	if(Keys::Key('L'))
-		psMainParticleSystem.AddGeneratorPosition(glm::vec3(appMain.sof(-60.0f),0.0f,0.0f));
-		//plLight2.vPosition += glm::vec3(appMain.sof(-60.0f),0.0f,0.0f);
-
-	if(Keys::Onekey('P'))
-		renderParticles = !renderParticles;
-
-	if(Keys::Onekey('Z')){
+	/*if(Keys::Onekey('Z')){
 		int colorsSize = sizeof(particleColors) / sizeof(glm::vec3);
 		currentParticleColor = currentParticleColor == 0 ? colorsSize - 1 : currentParticleColor - 1;
 		psMainParticleSystem2.SetGenColor(particleColors[currentParticleColor]);
@@ -342,78 +385,6 @@ void RenderScene(LPVOID lpParam)
 		int colorsSize = sizeof(particleColors) / sizeof(glm::vec3);
 		currentParticleColor = (currentParticleColor + 1) % colorsSize;
 		psMainParticleSystem2.SetGenColor(particleColors[currentParticleColor]);
-	}
-
-	if(Keys::Key(VK_UP)){
-		boatPos += vBoatForward * fBoatSpeed * appMain.sof(1);
-		psMainParticleSystem.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) - vBoatForward * 35.0f);
-	}
-	if(Keys::Key(VK_DOWN)){
-		boatPos -= vBoatForward * fBoatSpeed * appMain.sof(1);
-		psMainParticleSystem.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) - vBoatForward * 35.0f);
-	}
-	
-	if(Keys::Key(VK_LEFT)){
-		fBoatPitch += appMain.sof(20);
-		float fSine = sin(fBoatPitch/180.0f*PI);
-		float fCosine = cos(fBoatPitch/180.0f*PI);
-		vBoatForward = glm::vec3(fSine,0.0f,fCosine);
-		psMainParticleSystem.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) - vBoatForward * 35.0f);
-		float fPartAngle = fBoatPitch + 180.0f;
-		float fRightSpread = fPartAngle + 80.0f;
-		float fLeftSpread = fPartAngle - 80.0f;
-		float fMainSine = sin(fPartAngle/180.0f*PI);
-		float fMainCosine = cos(fPartAngle/180.0f*PI);
-		float fRightSine = sin(fRightSpread/180.0f*PI);
-		float fRightCosine = cos(fRightSpread/180.0f*PI);
-		float fLeftSine = sin(fLeftSpread/180.0f*PI);
-		float fLeftCosine = cos(fLeftSpread/180.0f*PI);
-		float fMainSpeed = 20.0f;
-		float fSpreadSpeed = 20.0f;
-		glm::vec3 mainVec = glm::vec3(fMainSine, 0.0f, fMainCosine) * fMainSpeed;
-		glm::vec3 rightVec = mainVec + glm::vec3(fRightSine, 0.0f, fRightCosine) * fSpreadSpeed;
-		glm::vec3 leftVec = mainVec + glm::vec3(fLeftSine, 0.0f, fLeftCosine) * fSpreadSpeed;
-		glm::vec3  minVel = rightVec;
-		glm::vec3  maxVel = leftVec;
-		psMainParticleSystem.setGenVelocity(minVel, maxVel);
-	}
-	if(Keys::Key(VK_RIGHT)){
-		fBoatPitch -= appMain.sof(20);
-		float fSine = sin(fBoatPitch/180.0f*PI);
-		float fCosine = cos(fBoatPitch/180.0f*PI);
-		vBoatForward = glm::vec3(fSine,0.0f,fCosine);
-		psMainParticleSystem.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) - vBoatForward * 35.0f);
-		float fPartAngle = fBoatPitch + 180.0f;
-		float fRightSpread = fPartAngle + 80.0f;
-		float fLeftSpread = fPartAngle - 80.0f;
-		float fMainSine = sin(fPartAngle/180.0f*PI);
-		float fMainCosine = cos(fPartAngle/180.0f*PI);
-		float fRightSine = sin(fRightSpread/180.0f*PI);
-		float fRightCosine = cos(fRightSpread/180.0f*PI);
-		float fLeftSine = sin(fLeftSpread/180.0f*PI);
-		float fLeftCosine = cos(fLeftSpread/180.0f*PI);
-		float fMainSpeed = 20.0f;
-		float fSpreadSpeed = 20.0f;
-		glm::vec3 mainVec = glm::vec3(fMainSine, 0.0f, fMainCosine) * fMainSpeed;
-		glm::vec3 rightVec = mainVec + glm::vec3(fRightSine, 0.0f, fRightCosine) * fSpreadSpeed;
-		glm::vec3 leftVec = mainVec + glm::vec3(fLeftSine, 0.0f, fLeftCosine) * fSpreadSpeed;
-		glm::vec3  minVel = rightVec;
-		glm::vec3  maxVel = leftVec;
-		psMainParticleSystem.setGenVelocity(minVel, maxVel);
-	}
-
-	/*f(Keys::Onekey('O')){
-		psMainParticleSystem.SetGeneratorProperties( 
-      glm::vec3(0.0f, 50.0f, 0.0f), // Where the particles are generated
-      glm::vec3(-50, 0, -50), // Minimal velocity
-      glm::vec3(50, 40, 50), // Maximal velocity
-      glm::vec3(0, -50, 0), // Gravity force applied to particles
-      glm::vec3(0.0f, 0.5f, 1.0f), // Color (light blue)
-      1.5f, // Minimum lifetime in seconds
-      3.0f, // Maximum lifetime in seconds
-      0.75f, // Rendered size
-      0.02f, // Spawn every 0.05 seconds
-      30); // And spawn 30 particles
 	}*/
 
 	glEnable(GL_DEPTH_TEST);
