@@ -187,6 +187,7 @@ LRESULT CALLBACK COpenGLWinApp::msgHandlerMain(HWND hWnd, UINT uiMsg, WPARAM wPa
 		case WM_SIZE:
 			oglControl.ResizeOpenGLViewportFull();
 			oglControl.SetProjection3D(45.0f, float(LOWORD(lParam))/float(HIWORD(lParam)), 0.5f, 1000.0f);
+			oglControl.SetOrtho2D(LOWORD(lParam), HIWORD(lParam));
 			break;
 
 		default:

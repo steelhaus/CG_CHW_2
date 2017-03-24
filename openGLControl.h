@@ -10,8 +10,10 @@ public:
 	
 	void ResizeOpenGLViewportFull();
 	void SetProjection3D(float fFOV, float fAspectRatio, float fNear, float fFar);
+	void SetOrtho2D(int width, int height);
 
 	glm::mat4* GetProjectionMatrix();
+	glm::mat4* GetOrthoMatrix();
 
 	void Render(LPVOID lpParam);
 	void ReleaseOpenGLControl(LPVOID lpParam);
@@ -46,7 +48,7 @@ private:
 
 	// Matrix for perspective projection
 	glm::mat4 mProjection;
-
+	glm::mat4 mOrtho;
 	// Viewport parameters
 	int iViewportWidth, iViewportHeight;
 

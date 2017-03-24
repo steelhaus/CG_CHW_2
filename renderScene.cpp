@@ -1,3 +1,4 @@
+#pragma warning(disable:4996)
 #include "common_header.h"
 
 #include "win_OpenGLApp.h"
@@ -17,6 +18,7 @@
 
 #include "Boat.h"
 #include "particle_system_tf.h"
+#include "freeTypeFont.h"
 
 #define NUMTEXTURES 7
 
@@ -43,7 +45,7 @@ CDirectionalLight dlSun;
 CSpotLight slFlashLight;
 CPointLight plLight, plLight2;
 
-
+CFreeTypeFont ftFont;
 
 CParticleSystemTransformFeedback psMainParticleSystem2;
 glm::vec3 particleColors[] = {
@@ -52,6 +54,7 @@ glm::vec3 particleColors[] = {
 	glm::vec3(1.0f,0.0f,0.0f)
 };
 int currentParticleColor = 0;
+int iFontSize = 24;
 bool renderParticles;
 
 #include "static_geometry.h"
@@ -60,8 +63,7 @@ bool renderParticles;
 #define plumeMaxLifeTime 3.0f
 CParticleSystemTransformFeedback psPlume; //шлейф за кораблем
 void updatePlumePosition(bool forwardMoving){
-	float fPositionMult = forwardMoving ? -35.0f : 20.0f;
-	//float fPositionMult = forwardMoving ? 28.0f : 30.0f;
+	float fPositionMult = -7.5f;//-35.0f : -35.0f;//20.0f;
 	psPlume.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) + vBoatForward * fPositionMult);
 }
 void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
@@ -176,7 +178,8 @@ void InitScene(LPVOID lpParam)
 	
 	renderParticles = true;
 
-
+	ftFont.loadSystemFont("comic.ttf", 32);
+	ftFont.setShaderProgram(&spFont2D);
 
    psMainParticleSystem2.InitalizeParticleSystem(); 
 
@@ -196,6 +199,20 @@ void InitScene(LPVOID lpParam)
 }
 
 float fGlobalAngle;
+
+#define FOG_EQUATION_LINEAR		0
+#define FOG_EQUATION_EXP		1
+#define FOG_EQUATION_EXP2		2
+#define FOG_DISABLED			3
+
+namespace FogParameters
+{
+	float fDensity = 0.04f;
+	float fStart = 10.0f;
+	float fEnd = 75.0f;
+	glm::vec4 vFogColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
+	int iFogEquation = FOG_EQUATION_EXP; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
+};
 
 // Renders whole scene.
 // lpParam - Pointer to anything you want.
@@ -238,6 +255,17 @@ void RenderScene(LPVOID lpParam)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	spMain.UseProgram();
+	spMain.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
+	spMain.SetUniform("fogParams.vFogColor", FogParameters::vFogColor);
+
+	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR)
+	{
+		spMain.SetUniform("fogParams.fStart", FogParameters::fStart);
+		spMain.SetUniform("fogParams.fEnd", FogParameters::fEnd);
+	}
+	else
+		spMain.SetUniform("fogParams.fDensity", FogParameters::fDensity);
+
 
 	spMain.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
 	spMain.SetUniform("gSampler", 0);
@@ -387,10 +415,41 @@ void RenderScene(LPVOID lpParam)
 		psMainParticleSystem2.SetGenColor(particleColors[currentParticleColor]);
 	}*/
 
+	//glEnable(GL_DEPTH_TEST);
+
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthFunc(GL_ALWAYS);
+	spFont2D.UseProgram();
+	spFont2D.SetUniform("vColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	spFont2D.SetUniform("projectionMatrix", oglControl->GetOrthoMatrix());
+
+	int width = oglControl->GetViewportWidth(), 
+		height = oglControl->GetViewportHeight();
+	ftFont.printFormatted(20, height-30, 24, "Z for activate exp fog equation, X for exp2, C for Linear and V for Vende.. I mean, disabled fog");
+	ftFont.printFormatted(20, height-60, 24, "Current fog type: %s", FogParameters::iFogEquation == 0 ? "Linear" : (FogParameters::iFogEquation == 1 ? "Exp" : (FogParameters::iFogEquation == 2 ? "Exp2" : "None")));
+	ftFont.printFormatted(20, height-90, 24, "For linear: fog start is %.4f (G and T to change), fog end is %.4f (H and Y to change)", FogParameters::fStart, FogParameters::fEnd);
+	ftFont.printFormatted(20, height-120, 24, "For exp: fog density is %.4f (J and U to change)", FogParameters::fDensity);
+	if (Keys::Key('Z')) FogParameters::iFogEquation = 1; if (Keys::Key('X')) FogParameters::iFogEquation = 2;
+	if (Keys::Key('C')) FogParameters::iFogEquation = 0; if (Keys::Key('V')) FogParameters::iFogEquation = 3;
+	if (Keys::Key('G')) FogParameters::fStart -= appMain.sof(15.0f);
+	if (Keys::Key('R')) FogParameters::fStart += appMain.sof(15.0f);
+	if (Keys::Key('H')) FogParameters::fEnd -= appMain.sof(15.0f);
+	if (Keys::Key('Y')) FogParameters::fEnd += appMain.sof(15.0f);
+	if (Keys::Key('J')) FogParameters::fDensity -= appMain.sof(0.01f);
+	if (Keys::Key('U')) FogParameters::fDensity += appMain.sof(0.01f);
+	
+	ftFont.print("Tochilin Anatoly, group 132", 20, 20, 24);
+	
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+
 	if(Keys::Onekey(VK_ESCAPE))PostQuitMessage(0);
 	fGlobalAngle += appMain.sof(1.0f);
 	oglControl->SwapBuffers();
+
+
 }
 
 // Releases OpenGL scene.

@@ -12,7 +12,7 @@ CShader::CShader()
 }
 
 CShader shShaders[NUMSHADERS];
-CShaderProgram spMain, spColor;
+CShaderProgram spMain, spColor, spOrtho2D, spFont2D;
 
 // Loads all shaders and creates shader programs.
 bool PrepareShaderPrograms()
@@ -21,6 +21,7 @@ bool PrepareShaderPrograms()
 
 	string sShaderFileNames[] = {"main_shader.vert", "main_shader.frag", "dirLight.frag", "pointLight.frag",
 		"color.vert", "color.frag", "spotLight.frag",
+		"font2D.frag", "ortho2D.vert", "ortho2D.frag",
 	};
 
 	FOR(i, NUMSHADERS)
@@ -46,6 +47,16 @@ bool PrepareShaderPrograms()
 	spColor.AddShaderToProgram(&shShaders[4]);
 	spColor.AddShaderToProgram(&shShaders[5]);
 	spColor.LinkProgram();
+
+	spOrtho2D.CreateProgram();
+	spOrtho2D.AddShaderToProgram(&shShaders[8]);
+	spOrtho2D.AddShaderToProgram(&shShaders[9]);
+	spOrtho2D.LinkProgram();
+
+	spFont2D.CreateProgram();
+	spFont2D.AddShaderToProgram(&shShaders[8]);
+	spFont2D.AddShaderToProgram(&shShaders[7]);
+	spFont2D.LinkProgram();
 
 	return true;
 }

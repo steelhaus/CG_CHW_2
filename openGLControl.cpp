@@ -161,10 +161,18 @@ void COpenGLControl::SetProjection3D(float fFOV, float fAspectRatio, float fNear
 	mProjection = glm::perspective(fFOV, fAspectRatio, fNear, fFar);
 }
 
+void COpenGLControl::SetOrtho2D(int width, int height){
+	mOrtho = glm::ortho(0.0f, float(width), 0.0f, float(height));
+}
+
 // Retrieves pointer to projection matrix.
 glm::mat4* COpenGLControl::GetProjectionMatrix()
 {
 	return &mProjection;
+}
+
+glm::mat4* COpenGLControl::GetOrthoMatrix(){
+	return &mOrtho;
 }
 
 // Registers simple OpenGL window class.
