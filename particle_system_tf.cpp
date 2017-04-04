@@ -287,9 +287,15 @@ int CParticleSystemTransformFeedback::GetNumParticles()
 }
 
 bool CParticleSystemTransformFeedback::ReleaseParticleSystem(){
-	/*spRenderParticles.DeleteProgram();
-	spUpdateParticles.DeleteProgram();*/
-	return false;
+	if (!bInitialized) return false;
+
+	glDeleteBuffers(2, uiParticleBuffer);
+	glDeleteVertexArrays(2, uiVAO);
+	glDeleteQueries(1, &uiQuery);
+	glDeleteTransformFeedbacks(1, &uiTransformFeedbackBuffer);
+	spRenderParticles.DeleteProgram();
+	spUpdateParticles.DeleteProgram();
+	return true;
 }
 
 void CParticleSystemTransformFeedback::ClearAllParticles(){

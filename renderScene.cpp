@@ -19,8 +19,12 @@
 #include "Boat.h"
 #include "particle_system_tf.h"
 #include "freeTypeFont.h"
+#include "skybox.h"
+#include "Floor.h"
+#include "time.h"
 
-#define NUMTEXTURES 7
+
+#define NUMTEXTURES 8
 
 /* One VBO, where all static data are stored now,
 in this tutorial vertex is stored as 3 floats for
@@ -38,14 +42,20 @@ float fBoatSpeed; //скорость
 glm::vec3 vBoatForward; //вектор направления движения (по носу)
 int iBoatMoving; //-1 for backward moving, 0 for idle, 1 for forward moving
 
+
 CTexture tTextures[NUMTEXTURES];
 CFlyingCamera cCamera;
 
 CDirectionalLight dlSun;
+float fDlSunAngle = 0.0f;
 CSpotLight slFlashLight;
 CPointLight plLight, plLight2;
+CTime tmInnerTime;
 
 CFreeTypeFont ftFont;
+
+Cskybox CSskybox;
+CFloor cfFloor;
 
 CParticleSystemTransformFeedback psMainParticleSystem2;
 glm::vec3 particleColors[] = {
@@ -56,7 +66,7 @@ glm::vec3 particleColors[] = {
 int currentParticleColor = 0;
 int iFontSize = 24;
 bool renderParticles;
-
+bool enableDayNightSelfAlternation = false;
 #include "static_geometry.h"
 
 #define plumeSpreadAngle 70.0f
@@ -66,6 +76,7 @@ void updatePlumePosition(bool forwardMoving){
 	float fPositionMult = -7.5f;//-35.0f : -35.0f;//20.0f;
 	psPlume.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) + vBoatForward * fPositionMult);
 }
+
 void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
 	float PI = float(atan(1.0)*4.0);
 	float fMainAngle = fBoatPitch + (forwardMoving ? 180.0f : 0.0f);
@@ -91,7 +102,9 @@ void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
 // lpParam - Pointer to anything you want.
 void InitScene(LPVOID lpParam)
 {
+	float PI = float(atan(1.0)*4.0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	tmInnerTime = CTime();
 
 	// Prepare all scene objects
 	vboSceneObjects.CreateVBO();
@@ -140,7 +153,7 @@ void InitScene(LPVOID lpParam)
 	}
 	// Load textures
 
-	string sTextureNames[] = {"grass.png", "met_wall01a.jpg", "tower.jpg", "box.jpg", "ground.jpg", "particle.bmp", "ship_texture.jpg"};
+	string sTextureNames[] = {"grass.png", "met_wall01a.jpg", "tower.jpg", "box.jpg", "ground.jpg", "particle.bmp", "ship_texture.jpg", "water.jpg"};
 
 	FOR(i, NUMTEXTURES)
 	{
@@ -154,10 +167,10 @@ void InitScene(LPVOID lpParam)
 	
 	cCamera = CFlyingCamera(glm::vec3(0.0f, 10.0f, 120.0f), glm::vec3(0.0f, 10.0f, 119.0f), glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.001f);
 	cCamera.SetMovingKeys('W', 'S', 'A', 'D');
-
-	dlSun = CDirectionalLight(glm::vec3(0.13f, 0.13f, 0.13f), glm::vec3(sqrt(2.0f) / 2, -sqrt(2.0f) / 2, 0), 1.0f);
+	dlSun = CDirectionalLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,0.0f,0.0f), 0.5f, tmInnerTime.getSunAngle());
 	// Creating spotlight, position and direction will get updated every frame, that's why zero vectors
 	slFlashLight = CSpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1, 15.0f, 0.017f);
+	slFlashLight.bOn = false;
 	//plLight = CPointLight(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 10.0f, 0.0f), 0.15f, 0.3f, 0.007f, 0.00008f);
 	plLight = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f,10.0f,0.0f),0.15f,0.3f,0.007f,0.00008f);
 	plLight2 = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(0.0f,10.0f,30.0f),0.15f,0.3f,0.007f,0.00008f);
@@ -195,7 +208,8 @@ void InitScene(LPVOID lpParam)
       0.02f, // Spawn every 0.05 seconds
       30); // And spawn 30 particles
 
-   
+   CSskybox.loadTextures("data\\skybox\\", "jajlands_ft.jpg", "jajlands_bk.jpg", "jajlands_lf.jpg", "jajlands_rt.jpg", "jajlands_up.jpg", "jajlands_dn.jpg");
+   cfFloor.loadTextures();
 }
 
 float fGlobalAngle;
@@ -211,86 +225,93 @@ namespace FogParameters
 	float fStart = 10.0f;
 	float fEnd = 75.0f;
 	glm::vec4 vFogColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
-	int iFogEquation = FOG_EQUATION_EXP; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
+	int iFogEquation = FOG_DISABLED; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
 };
-
+#include "ftPrinter.h"
 // Renders whole scene.
 // lpParam - Pointer to anything you want.
 void RenderScene(LPVOID lpParam)
 {
 	// Typecast lpParam to COpenGLControl pointer
 	COpenGLControl* oglControl = (COpenGLControl*)lpParam;
-
+	oglControl->ResizeOpenGLViewportFull();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	spMain.UseProgram();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glm::mat4 mModelMatrix, mView;
+	mView = cCamera.Look();
+	mModelMatrix = glm::translate(glm::mat4(1.0f), cCamera.vEye);
 
-	// Set spotlight parameters
+	//Render skybox
+	spSkybox.UseProgram();
+	spSkybox.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
+	spSkybox.SetUniform("matrices.viewMatrix", &mView);
+	spSkybox.SetUniform("matrices.modelMatrix", &mModelMatrix);
+	spSkybox.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mModelMatrix)));
+	spSkybox.SetUniform("vColor", tmInnerTime.getSkyboxColor());
+	//spSkybox.SetUniform("vColor", glm::vec4(1, 1, 1, 1));
+	spSkybox.SetUniform("gSampler", 0);	
+	//Fog
+	spSkybox.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
+	spSkybox.SetUniform("fogParams.vFogColor", FogParameters::vFogColor);
+	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR){
+		spSkybox.SetUniform("fogParams.fStart", FogParameters::fStart);
+		spSkybox.SetUniform("fogParams.fEnd", FogParameters::fEnd);
+	}
+	else {
+		spSkybox.SetUniform("fogParams.fDensity", FogParameters::fDensity);
+	}
+	CSskybox.renderSkybox();
+	//End render skybox
 
+	
+	//Main
+	spMain.UseProgram();
+	spMain.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
+	spMain.SetUniform("matrices.viewMatrix", &mView);
+	spMain.SetUniform("matrices.modelMatrix", &mModelMatrix);
+	spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mView*mModelMatrix)));
+	spMain.SetUniform("gSampler", 0);
+	//Set spotlight parameters
 	glm::vec3 vSpotLightPos = cCamera.vEye;
 	glm::vec3 vCameraDir = glm::normalize(cCamera.vView-cCamera.vEye);
 	// Move down a little
 	vSpotLightPos.y -= 3.2f;
-	// Find direction of spotlight
+	// Spotlight direction
 	glm::vec3 vSpotLightDir = (vSpotLightPos+vCameraDir*75.0f)-vSpotLightPos;
 	vSpotLightDir = glm::normalize(vSpotLightDir);
 	// Find vector of horizontal offset
 	glm::vec3 vHorVector = glm::cross(cCamera.vView-cCamera.vEye, cCamera.vUp);
 	vSpotLightPos += vHorVector*3.3f;
-	// Set it
 	slFlashLight.vPosition = vSpotLightPos;
-	slFlashLight.vDirection = vSpotLightDir;
-	
+	slFlashLight.vDirection = vSpotLightDir;	
 	slFlashLight.SetUniformData(&spMain, "spotLight");
-
 	plLight.SetUniformData(&spMain, "pointLight[0]");
 	plLight2.SetUniformData(&spMain, "pointLight[1]");
-
-	oglControl->ResizeOpenGLViewportFull();
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	spMain.UseProgram();
+	dlSun.SetUniformData(&spMain, "sunLight");
+	//Fog
 	spMain.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
 	spMain.SetUniform("fogParams.vFogColor", FogParameters::vFogColor);
-
-	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR)
-	{
+	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR){
 		spMain.SetUniform("fogParams.fStart", FogParameters::fStart);
 		spMain.SetUniform("fogParams.fEnd", FogParameters::fEnd);
 	}
-	else
+	else {
 		spMain.SetUniform("fogParams.fDensity", FogParameters::fDensity);
+	}
 
-
-	spMain.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
-	spMain.SetUniform("gSampler", 0);
-
-	mView = cCamera.Look();
-	spMain.SetUniform("matrices.viewMatrix", &mView);
-
-	mModelMatrix = glm::translate(glm::mat4(1.0f), cCamera.vEye);
-	
-	spMain.SetUniform("matrices.modelMatrix", &mModelMatrix);
-	spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mView*mModelMatrix)));
-
-	glBindVertexArray(uiVAOs[0]);
-
-	dlSun.SetUniformData(&spMain, "sunLight");
-
+	//Scene objects	
 	spMain.SetUniform("vColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	spMain.SetUniform("matrices.modelMatrix", glm::mat4(1.0f));
 	spMain.SetUniform("matrices.normalMatrix", glm::mat4(1.0f));
-
 	// Render ground
+	cfFloor.renderFloor();
 
-	tTextures[0].BindTexture();
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	
+
+
+	//tTextures[7].BindTexture();
+	//glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(uiVAOs[0]);
 	// Render cubes
 	glm::mat4 mModelToCamera;
 
@@ -300,7 +321,6 @@ void RenderScene(LPVOID lpParam)
 	FOR(j, 2)
 	FOR(i, 16)
 	{
-		//glm::vec3 vPos = glm::vec3(cos(PI/4 * i) * 30.0f, 4.0f, sin(PI/4*i) * 30.0f);
 		glm::vec3 vPos = glm::vec3(30.0f, 4.0f + 8.0f*j, 0.0f);
 		mModelMatrix = glm::mat4(1.0f);
 		mModelMatrix = glm::rotate(mModelMatrix, PI/8*i + PI/16*j, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -325,8 +345,8 @@ void RenderScene(LPVOID lpParam)
 	glDrawArrays(GL_TRIANGLES, 0, boat1->getBoatIndicesSize());
 	glDisable(GL_CULL_FACE);
 
-	glBindVertexArray(uiVAOs[0]);
 	// render torus
+	glBindVertexArray(uiVAOs[0]);
 	tTextures[1].BindTexture();
 	// Now it's gonna float in the air
 	glm::vec3 vPos = glm::vec3(0.0f, 10.0, 0.0f);
@@ -401,55 +421,23 @@ void RenderScene(LPVOID lpParam)
 	}
 	cCamera.Update();
 
-	if(Keys::Onekey('F'))
-		slFlashLight.bOn = 1-slFlashLight.bOn;
+	
+	
+	//вывод информации
+	ftPrintAllInfo(oglControl);
+	ftCheckKeyPressing();
 
-	/*if(Keys::Onekey('Z')){
-		int colorsSize = sizeof(particleColors) / sizeof(glm::vec3);
-		currentParticleColor = currentParticleColor == 0 ? colorsSize - 1 : currentParticleColor - 1;
-		psMainParticleSystem2.SetGenColor(particleColors[currentParticleColor]);
+	//смена дня и ночи
+	if (enableDayNightSelfAlternation){ 
+		tmInnerTime.addTime(appMain.sof(1.0f));
+		dlSun.fAngle = tmInnerTime.getSunAngle();
+		dlSun.updateLightProperties();
 	}
-	if(Keys::Onekey('X')){
-		int colorsSize = sizeof(particleColors) / sizeof(glm::vec3);
-		currentParticleColor = (currentParticleColor + 1) % colorsSize;
-		psMainParticleSystem2.SetGenColor(particleColors[currentParticleColor]);
-	}*/
-
-	//glEnable(GL_DEPTH_TEST);
-
-
-	glDisable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
-	spFont2D.UseProgram();
-	spFont2D.SetUniform("vColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	spFont2D.SetUniform("projectionMatrix", oglControl->GetOrthoMatrix());
-
-	int width = oglControl->GetViewportWidth(), 
-		height = oglControl->GetViewportHeight();
-	ftFont.printFormatted(20, height-30, 24, "Z for activate exp fog equation, X for exp2, C for Linear and V for Vende.. I mean, disabled fog");
-	ftFont.printFormatted(20, height-60, 24, "Current fog type: %s", FogParameters::iFogEquation == 0 ? "Linear" : (FogParameters::iFogEquation == 1 ? "Exp" : (FogParameters::iFogEquation == 2 ? "Exp2" : "None")));
-	ftFont.printFormatted(20, height-90, 24, "For linear: fog start is %.4f (G and T to change), fog end is %.4f (H and Y to change)", FogParameters::fStart, FogParameters::fEnd);
-	ftFont.printFormatted(20, height-120, 24, "For exp: fog density is %.4f (J and U to change)", FogParameters::fDensity);
-	if (Keys::Key('Z')) FogParameters::iFogEquation = 1; if (Keys::Key('X')) FogParameters::iFogEquation = 2;
-	if (Keys::Key('C')) FogParameters::iFogEquation = 0; if (Keys::Key('V')) FogParameters::iFogEquation = 3;
-	if (Keys::Key('G')) FogParameters::fStart -= appMain.sof(15.0f);
-	if (Keys::Key('R')) FogParameters::fStart += appMain.sof(15.0f);
-	if (Keys::Key('H')) FogParameters::fEnd -= appMain.sof(15.0f);
-	if (Keys::Key('Y')) FogParameters::fEnd += appMain.sof(15.0f);
-	if (Keys::Key('J')) FogParameters::fDensity -= appMain.sof(0.01f);
-	if (Keys::Key('U')) FogParameters::fDensity += appMain.sof(0.01f);
-	
-	ftFont.print("Tochilin Anatoly, group 132", 20, 20, 24);
-	
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
 
 	if(Keys::Onekey(VK_ESCAPE))PostQuitMessage(0);
 	fGlobalAngle += appMain.sof(1.0f);
+	
 	oglControl->SwapBuffers();
-
-
 }
 
 // Releases OpenGL scene.
@@ -461,6 +449,8 @@ void ReleaseScene(LPVOID lpParam)
 	spMain.DeleteProgram();
 	FOR(i, NUMSHADERS)shShaders[i].DeleteShader();
 
-	glDeleteVertexArrays(1, uiVAOs);
+	CSskybox.deleteSkybox();
+
+	glDeleteVertexArrays(2, uiVAOs);
 	vboSceneObjects.DeleteVBO();
 }

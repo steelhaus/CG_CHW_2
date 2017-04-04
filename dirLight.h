@@ -10,9 +10,13 @@ public:
 	glm::vec3 vDirection; // and its direction
 
 	float fAmbient;
+	float fMaxAmbient;
+	float fMaxColor;
+	float fAngle;
 
 	void SetUniformData(CShaderProgram* spProgram, string sLightVarName);
+	void updateLightProperties();
 
 	CDirectionalLight();
-	CDirectionalLight(glm::vec3 a_vColor, glm::vec3 a_vDirection, float a_fAmbient);
+	CDirectionalLight(glm::vec3 a_vColor, glm::vec3 a_vDirection, float a_fAmbient, float a_fAngle);
 };

@@ -1,24 +1,13 @@
 #version 330
 
 smooth in vec2 vTexCoord;
-smooth in vec3 vNormal;
 smooth in vec4 vEyeSpacePos;
 smooth in vec3 vWorldPos;
 out vec4 outputColor;
 
+
 uniform sampler2D gSampler;
 uniform vec4 vColor;
-
-#include "dirLight.frag"
-#include "spotLight.frag"
-#include "pointLight.frag"
-
-#define lightsNumber 2
-
-uniform DirectionalLight sunLight;
-uniform SpotLight spotLight;
-uniform PointLight pointLight[lightsNumber];
-
 uniform struct FogParameters
 {
 	vec4 vFogColor; // Fog color
@@ -27,6 +16,7 @@ uniform struct FogParameters
 	float fDensity; // For exp and exp2 equation
 	int iEquation; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
 } fogParams;
+
 
 float getFogFactor(FogParameters params, float fFogCoord)
 {
@@ -43,21 +33,10 @@ float getFogFactor(FogParameters params, float fFogCoord)
 	return fResult;
 }
 
-void main()
-{
-	vec3 vNormalized = normalize(vNormal);
-	
+void main(){
 	vec4 vTexColor = texture2D(gSampler, vTexCoord);
-	vec4 vDirLightColor = getDirectionalLightColor(sunLight, vNormal);
-	vec4 vSpotlightColor = GetSpotLightColor(spotLight, vWorldPos);
-	vec4 vPointlightColor = vec4(0.0,0.0,0.0,0.0);
-	/*for(int i = 0; i < lightsNumber; ++i){
-		vPointlightColor += getPointLightColor(pointLight[i], vWorldPos, vNormalized);
-	}*/
-	vec4 vMixedColor = vTexColor*vColor*(vDirLightColor+vSpotlightColor+vPointlightColor);
-	
-	//here fog goes
-	
+	vec4 vMixedColor = vTexColor*vColor;
+
 	if (fogParams.iEquation == 3){
 		outputColor = vMixedColor;
 	} else {
