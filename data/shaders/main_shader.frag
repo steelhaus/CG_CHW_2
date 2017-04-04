@@ -6,8 +6,11 @@ smooth in vec4 vEyeSpacePos;
 smooth in vec3 vWorldPos;
 out vec4 outputColor;
 
-uniform sampler2D gSampler;
+uniform sampler2D gSamplers[2];
 uniform vec4 vColor;
+
+uniform int numTextures;
+uniform int textureTransitionRatio;
 
 #include "dirLight.frag"
 #include "spotLight.frag"
@@ -45,9 +48,15 @@ float getFogFactor(FogParameters params, float fFogCoord)
 
 void main()
 {
+	float m1 = vTexCoord.y / textureTransitionRatio;
+	float m2 = 1 - vTexCoord.y / textureTransitionRatio;
 	vec3 vNormalized = normalize(vNormal);
-	
-	vec4 vTexColor = texture2D(gSampler, vTexCoord);
+	vec4 vTexColor = texture2D(gSamplers[0], vTexCoord);
+	if (numTextures > 1){
+		vec4 vTexColor2 = texture2D(gSamplers[1], vTexCoord);
+		vTexColor = vTexColor * m1 + vTexColor2 * m2;
+	}
+
 	vec4 vDirLightColor = getDirectionalLightColor(sunLight, vNormal);
 	vec4 vSpotlightColor = GetSpotLightColor(spotLight, vWorldPos);
 	vec4 vPointlightColor = vec4(0.0,0.0,0.0,0.0);

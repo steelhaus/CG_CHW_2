@@ -2,14 +2,15 @@
 
 #include "vertexBufferObject.h"
 #include "texture.h"
+#include "shaders.h"
 
 class CFloor{
 private:
 	UINT uiVAO;
 	CVertexBufferObject vboFloor;
-	CTexture tTextures[2];
+	CTexture tTextures[3];
 public: 
 	void loadTextures();
-	void renderFloor();
+	void renderFloor(CShaderProgram spProgram);
 	void release();
 };

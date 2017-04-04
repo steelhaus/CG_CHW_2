@@ -264,14 +264,14 @@ void RenderScene(LPVOID lpParam)
 	CSskybox.renderSkybox();
 	//End render skybox
 
-	
 	//Main
 	spMain.UseProgram();
 	spMain.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
 	spMain.SetUniform("matrices.viewMatrix", &mView);
 	spMain.SetUniform("matrices.modelMatrix", &mModelMatrix);
 	spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mView*mModelMatrix)));
-	spMain.SetUniform("gSampler", 0);
+	spMain.SetUniform("gSamplers[0]", 0);
+	spMain.SetUniform("gSamplers[1]", 1);
 	//Set spotlight parameters
 	glm::vec3 vSpotLightPos = cCamera.vEye;
 	glm::vec3 vCameraDir = glm::normalize(cCamera.vView-cCamera.vEye);
@@ -305,8 +305,9 @@ void RenderScene(LPVOID lpParam)
 	spMain.SetUniform("matrices.modelMatrix", glm::mat4(1.0f));
 	spMain.SetUniform("matrices.normalMatrix", glm::mat4(1.0f));
 	// Render ground
-	cfFloor.renderFloor();
-
+	//spMain.SetUniform("numTextures", 2);
+	cfFloor.renderFloor(spMain);
+	//spMain.SetUniform("numTextures", 1);
 
 
 	//tTextures[7].BindTexture();
