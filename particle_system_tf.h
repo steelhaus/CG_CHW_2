@@ -54,6 +54,8 @@ public:
 
 	bool ReleaseParticleSystem();
 
+	void addGeneratorVelocity(glm::vec3 a_vGenVelocityMin, glm::vec3 a_vGenVelocityMax);
+
 	int GetNumParticles();
 
 	void SetMatrices(glm::mat4* a_matProjection, glm::vec3 vEye, glm::vec3 vView, glm::vec3 vUpVector);

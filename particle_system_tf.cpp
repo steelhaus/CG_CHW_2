@@ -109,6 +109,7 @@ float grandf(float fMin, float fAdd)
 	return fMin+fAdd*fRandom;
 }
 
+
 void CParticleSystemTransformFeedback::UpdateParticles(float fTimePassed)
 {
 	if(!bInitialized)return;
@@ -250,6 +251,15 @@ void CParticleSystemTransformFeedback::SetGenColor(glm::vec3 a_vGenColor){
 void CParticleSystemTransformFeedback::setGenVelocity(glm::vec3 a_vGenVelocityMin, glm::vec3 a_vGenVelocityMax){
 	vGenVelocityMin = a_vGenVelocityMin;
 	vGenVelocityRange = a_vGenVelocityMax - a_vGenVelocityMin;
+}
+
+void CParticleSystemTransformFeedback::addGeneratorVelocity(glm::vec3 a_vGenVelocityMin, glm::vec3 a_vGenVelocityMax){
+	//vGenVelocityMin += a_vGenVelocityMin;
+	//glm::vec3(
+
+	//vGenVelocityRange += a_vGenVelocityMax;
+	//vGenVelocityMax += a_vGenVelocityMax;
+
 }
 
 void CParticleSystemTransformFeedback::SetGeneratorProperties(glm::vec3 a_vGenPosition, glm::vec3 a_vGenVelocityMin, glm::vec3 a_vGenVelocityMax, glm::vec3 a_vGenGravityVector, glm::vec3 a_vGenColor, float a_fGenLifeMin, float a_fGenLifeMax, float a_fGenSize, float fEvery, int a_iNumToGenerate)
