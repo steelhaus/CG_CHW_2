@@ -4,6 +4,7 @@
 #define FT_INFO_LIGHT			1
 #define FT_INFO_TIME			2
 #define FT_EMPTY				3
+#define FT_PARTICLE				4
 namespace currentInfo{
 	int iInfo = FT_EMPTY;
 	int secondsKeyTick = 0;
@@ -23,7 +24,7 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 	int yPos = height;
 	ftFont.printFormatted(20, yPos -= 30, 24, "World time %.0f:%.0f:%.0f", fullHours, fullMinutes, fullSeconds);
 	ftFont.printFormatted(20, yPos -= 50, 24, "Use Key '1' for Fog section, Key '2' for Light section, Key '3' for Time section,");
-	ftFont.printFormatted(20, yPos -= 30, 24, "Key '0' for Empty section");
+	ftFont.printFormatted(20, yPos -= 30, 24, "Key '0' for Empty section, Key '4' for Particle section");
 	switch(currentInfo::iInfo){
 	case FT_EMPTY:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: EMPTY");
@@ -48,6 +49,8 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: LIGHT");
 		ftFont.printFormatted(20, yPos -= 50, 24, "current direction light angle is: %.2f", dlSun.fAngle);
 		ftFont.printFormatted(20, yPos -= 30, 24, "To switch spotlight on/off press key F");
+		ftFont.printFormatted(20, yPos -= 30, 24, "Press R/G/B/N to turn on/off red/green/blue/white point lights");
+		ftFont.printFormatted(20, yPos -= 50, 24, "Press Ctrl + R/G/B/N to posess light");
 		break;
 	case FT_INFO_TIME:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: TIME");
@@ -57,6 +60,10 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 
 		//float fr = tmInnerTime.getSkyboxColor().r;
 		//ftFont.printFormatted(20, yPos -= 30, 24, "gray shade is: %.4f", fr);
+		break;
+	case FT_PARTICLE:
+		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: PARTICLES");
+		ftFont.printFormatted(20, yPos -= 50, 24, "press I and K to change singing fountain radius");
 		break;
 	}
 
@@ -70,6 +77,7 @@ void ftCheckKeyPressing(){
 	if (Keys::Key('2')) currentInfo::iInfo = FT_INFO_LIGHT;
 	if (Keys::Key('3')) currentInfo::iInfo = FT_INFO_TIME;
 	if (Keys::Key('0')) currentInfo::iInfo = FT_EMPTY;
+	if (Keys::Key('4')) currentInfo::iInfo = FT_PARTICLE;
 	if(Keys::Onekey('F')) slFlashLight.bOn = 1-slFlashLight.bOn;	
 
 	switch(currentInfo::iInfo){
@@ -93,7 +101,20 @@ void ftCheckKeyPressing(){
 		}
 		break;
 	case FT_INFO_LIGHT:
-		
+		if (!Keys::Key(VK_CONTROL) && Keys::Onekey('R')) plLightRed.bTurnedOn = 1 - plLightRed.bTurnedOn;
+		if (!Keys::Key(VK_CONTROL) && Keys::Onekey('G')) plLightGreen.bTurnedOn = 1 - plLightGreen.bTurnedOn;
+		if (!Keys::Key(VK_CONTROL) && Keys::Onekey('B')) plLightBlue.bTurnedOn = 1 - plLightBlue.bTurnedOn;
+		if (!Keys::Key(VK_CONTROL) && Keys::Onekey('N')) plLightWhite.bTurnedOn = 1 - plLightWhite.bTurnedOn;
+		if (Keys::Key('I')) currentPosessedLight->vPosition.z += appMain.sof(20.0f);
+		if (Keys::Key('K')) currentPosessedLight->vPosition.z -= appMain.sof(20.0f);
+		if (Keys::Key('J')) currentPosessedLight->vPosition.x += appMain.sof(20.0f);
+		if (Keys::Key('L')) currentPosessedLight->vPosition.x -= appMain.sof(20.0f);
+		if (Keys::Key('U')) currentPosessedLight->vPosition.y -= appMain.sof(20.0f);
+		if (Keys::Key('O')) currentPosessedLight->vPosition.y += appMain.sof(20.0f);
+		if (Keys::Key(VK_CONTROL) && Keys::Key('R')) currentPosessedLight = &plLightRed;
+		if (Keys::Key(VK_CONTROL) && Keys::Key('G')) currentPosessedLight = &plLightGreen;
+		if (Keys::Key(VK_CONTROL) && Keys::Key('B')) currentPosessedLight = &plLightBlue;
+		if (Keys::Key(VK_CONTROL) && Keys::Key('N')) currentPosessedLight = &plLightWhite;
 		break;
 	case FT_INFO_TIME:
 		if (Keys::Key('Q')) enableDayNightSelfAlternation = false;
@@ -125,6 +146,12 @@ void ftCheckKeyPressing(){
 		} else {
 			currentInfo::secondsKeyTick = 0;
 		}
+		break;
+	case FT_PARTICLE:
+		float fDelta = appMain.sof(5.0);
+		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(-fDelta,0.0f,-fDelta), glm::vec3(fDelta,0.0f,fDelta));
+		//if (Keys::Key('K'))
+		
 		break;
 	}
 
