@@ -148,10 +148,11 @@ void ftCheckKeyPressing(){
 		}
 		break;
 	case FT_PARTICLE:
-		float fDelta = appMain.sof(5.0);
-		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(-fDelta,0.0f,-fDelta), glm::vec3(fDelta,0.0f,fDelta));
-		//if (Keys::Key('K'))
-		
+		float fDelta = appMain.sof(20.0);
+		if (Keys::Key('L')) psSingingFountain.addGeneratorVelocity(glm::vec3(-fDelta,0.0f,-fDelta), glm::vec3(fDelta,0.0f,fDelta));
+		if (Keys::Key('J')) psSingingFountain.addGeneratorVelocity(glm::vec3(fDelta,0.0f,fDelta), glm::vec3(-fDelta,0.0f,-fDelta));
+		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,fDelta/2,0.0f), glm::vec3(0.0f,fDelta/2,0.0f));
+		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,-fDelta/2,0.0f), glm::vec3(0.0f,-fDelta/2,0.0f));
 		break;
 	}
 

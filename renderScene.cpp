@@ -89,6 +89,18 @@ void updatePlumePosition(bool forwardMoving){
 	psPlume.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) + vBoatForward * fPositionMult);
 }
 
+float fMaxFogDensity = 0.04f;
+float fFogSecondsForChage = 5.0f;
+float fFogDensityChangePerSecond = fMaxFogDensity / fFogSecondsForChage;
+bool bIncreasingFog = true;
+/*void gradualFogChanging(){
+	float fFogDensityDelta = appMain.sof(fFogDensityChangePerSecond);
+	if (bIncreasingFog)
+		FogParameters::fDensity += min(fFogDensityDelta,fMaxFogDensity);
+	else 
+		FogParameters::fDensity -= max(fFogDensityDelta,0.0f);
+}*/
+
 void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
 	float PI = float(atan(1.0)*4.0);
 	float fMainAngle = fBoatPitch + (forwardMoving ? 180.0f : 0.0f);
@@ -236,7 +248,7 @@ float fGlobalAngle;
 
 namespace FogParameters
 {
-	float fDensity = 0.04f;
+	float fDensity = 0.0f;//0.04f;
 	float fStart = 10.0f;
 	float fEnd = 75.0f;
 	glm::vec4 vFogColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
@@ -256,7 +268,9 @@ void RenderScene(LPVOID lpParam)
 	glm::mat4 mModelMatrix, mView;
 	mView = cCamera.Look();
 	mModelMatrix = glm::translate(glm::mat4(1.0f), cCamera.vEye);
-
+	//if (FogParameters::iFogEquation != FOG_DISABLED){
+	//	gradualFogChanging();
+	//}
 	//Render skybox
 	spSkybox.UseProgram();
 	spSkybox.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
