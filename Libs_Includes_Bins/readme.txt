@@ -3,7 +3,7 @@
 Далее по одному.
 1) glew-1.13.0 (загрузка расширений openGL, доступк ним)
 	1.1) В Include Directories добавить путь к Libs_Includes_Bins\glew-1.13.0\include
-	1.2) В Library Directories добавить путь к Libs_Includes_Bins\glew-1.13.0\lib\Release\Win32
+	1.2) В Library Directories добавить путь к Libs_Includes_Bins\glew-1.13.0\bin\Release\Win32
 	1.3) Libs_Includes_Bins\glew-1.13.0\bin\Release\Win32\glew32.dll закинуть в папку Debug проекта
 
 2) glm (математика для openGL)
