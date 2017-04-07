@@ -16,7 +16,7 @@ uniform int textureTransitionRatio;
 #include "spotLight.frag"
 #include "pointLight.frag"
 
-#define lightsNumber 2
+#define lightsNumber 4
 
 uniform DirectionalLight sunLight;
 uniform SpotLight spotLight;
@@ -60,9 +60,9 @@ void main()
 	vec4 vDirLightColor = getDirectionalLightColor(sunLight, vNormal);
 	vec4 vSpotlightColor = GetSpotLightColor(spotLight, vWorldPos);
 	vec4 vPointlightColor = vec4(0.0,0.0,0.0,0.0);
-	/*for(int i = 0; i < lightsNumber; ++i){
+	for(int i = 0; i < lightsNumber; ++i){
 		vPointlightColor += getPointLightColor(pointLight[i], vWorldPos, vNormalized);
-	}*/
+	}
 	vec4 vMixedColor = vTexColor*vColor*(vDirLightColor+vSpotlightColor+vPointlightColor);
 	
 	//here fog goes

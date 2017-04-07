@@ -22,6 +22,7 @@
 #include "skybox.h"
 #include "Floor.h"
 #include "time.h"
+#include "ObjModel.h"
 
 
 #define NUMTEXTURES 8
@@ -49,15 +50,26 @@ CFlyingCamera cCamera;
 CDirectionalLight dlSun;
 float fDlSunAngle = 0.0f;
 CSpotLight slFlashLight;
-CPointLight plLight, plLight2;
+CPointLight plLightWhite, plLightRed, plLightGreen, plLightBlue;
+CPointLight *currentPosessedLight = &plLightWhite;
 CTime tmInnerTime;
+CObjModel houseModel, fountainModel;
 
 CFreeTypeFont ftFont;
 
 Cskybox CSskybox;
 CFloor cfFloor;
 
-CParticleSystemTransformFeedback psMainParticleSystem2;
+CParticleSystemTransformFeedback psSingingFountain;
+glm::vec3 currentFountainColor(1.0f, 0.0f, 0.0f);
+bool renderFountain = true;
+
+#define FNT_RED 0
+#define FNT_GREEN 1
+#define FNT_BLUE 2
+
+int fntCurrentColorUp = FNT_GREEN;
+
 glm::vec3 particleColors[] = {
 	glm::vec3(0.0f,0.0f,1.0f),
 	glm::vec3(0.0f,1.0f,0.0f),
@@ -171,10 +183,11 @@ void InitScene(LPVOID lpParam)
 	// Creating spotlight, position and direction will get updated every frame, that's why zero vectors
 	slFlashLight = CSpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1, 15.0f, 0.017f);
 	slFlashLight.bOn = false;
-	//plLight = CPointLight(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 10.0f, 0.0f), 0.15f, 0.3f, 0.007f, 0.00008f);
-	plLight = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(0.0f,10.0f,0.0f),0.15f,0.3f,0.007f,0.00008f);
-	plLight2 = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(0.0f,10.0f,30.0f),0.15f,0.3f,0.007f,0.00008f);
-	
+	plLightWhite = CPointLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
+	plLightRed = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(20.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
+	plLightGreen = CPointLight(glm::vec3(0.0f,1.0f,0.0f), glm::vec3(40.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
+	plLightBlue = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(60.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
+
 	psPlume.InitalizeParticleSystem(); 
 	psPlume.SetGeneratorProperties( 
 		glm::vec3(0.0f, 0.0f, 0.0f), //location (calculate after)
@@ -194,14 +207,14 @@ void InitScene(LPVOID lpParam)
 	ftFont.loadSystemFont("comic.ttf", 32);
 	ftFont.setShaderProgram(&spFont2D);
 
-   psMainParticleSystem2.InitalizeParticleSystem(); 
+	psSingingFountain.InitalizeParticleSystem(); 
 
-   psMainParticleSystem2.SetGeneratorProperties( 
-      glm::vec3(0.0f, 27.5f, 50.0f), // Where the particles are generated
-      glm::vec3(-50, 0, -50), // Minimal velocity
-      glm::vec3(50, 40, 50), // Maximal velocity
-      glm::vec3(0, -50, 0), // Gravity force applied to particles
-	  particleColors[currentParticleColor], // Color (light blue)
+	psSingingFountain.SetGeneratorProperties( 
+      glm::vec3(0.0f, 45.0f, -100.0f), // location
+      glm::vec3(-15, 10, -15), // Minimal velocity
+      glm::vec3(15, 20, 15), // Maximal velocity
+      glm::vec3(0, -40, 0), // Gravity force applied to particles
+	  currentFountainColor,
       1.5f, // Minimum lifetime in seconds
       3.0f, // Maximum lifetime in seconds
       0.75f, // Rendered size
@@ -210,6 +223,8 @@ void InitScene(LPVOID lpParam)
 
    CSskybox.loadTextures("data\\skybox\\", "jajlands_ft.jpg", "jajlands_bk.jpg", "jajlands_lf.jpg", "jajlands_rt.jpg", "jajlands_up.jpg", "jajlands_dn.jpg");
    cfFloor.loadTextures();
+   houseModel.LoadModel("data\\models\\house\\house.obj", "house.mtl");
+   fountainModel.LoadModel("data\\models\\fountain\\fountain.obj", "fountain.mtl");
 }
 
 float fGlobalAngle;
@@ -261,6 +276,7 @@ void RenderScene(LPVOID lpParam)
 	else {
 		spSkybox.SetUniform("fogParams.fDensity", FogParameters::fDensity);
 	}
+	spSkybox.SetUniform("avrgSkyboxDistance", 150);
 	CSskybox.renderSkybox();
 	//End render skybox
 
@@ -286,8 +302,10 @@ void RenderScene(LPVOID lpParam)
 	slFlashLight.vPosition = vSpotLightPos;
 	slFlashLight.vDirection = vSpotLightDir;	
 	slFlashLight.SetUniformData(&spMain, "spotLight");
-	plLight.SetUniformData(&spMain, "pointLight[0]");
-	plLight2.SetUniformData(&spMain, "pointLight[1]");
+	plLightWhite.SetUniformData(&spMain, "pointLight[0]");
+	plLightRed.SetUniformData(&spMain, "pointLight[1]");
+	plLightGreen.SetUniformData(&spMain, "pointLight[2]");
+	plLightBlue.SetUniformData(&spMain, "pointLight[3]");
 	dlSun.SetUniformData(&spMain, "sunLight");
 	//Fog
 	spMain.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
@@ -322,8 +340,9 @@ void RenderScene(LPVOID lpParam)
 	FOR(j, 2)
 	FOR(i, 16)
 	{
-		glm::vec3 vPos = glm::vec3(30.0f, 4.0f + 8.0f*j, 0.0f);
+		glm::vec3 vPos = glm::vec3(30.0f, 24.0f + 8.0f*j, 0.0f);
 		mModelMatrix = glm::mat4(1.0f);
+		mModelMatrix = glm::translate(mModelMatrix, glm::vec3(0.0f,0.0f,-100.0f));
 		mModelMatrix = glm::rotate(mModelMatrix, PI/8*i + PI/16*j, glm::vec3(0.0f, 1.0f, 0.0f));
 		mModelMatrix = glm::translate(mModelMatrix, vPos);
 		mModelMatrix = glm::scale(mModelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
@@ -332,6 +351,15 @@ void RenderScene(LPVOID lpParam)
 		spMain.SetUniform("matrices.modelMatrix", mModelMatrix);
 		glDrawArrays(GL_TRIANGLES, 6, 36);
 	}
+
+	glm::vec3 housePos = glm::vec3(80.0f,20.0f,-100.0f);
+	mModelMatrix = glm::mat4(1.0f);
+	mModelMatrix = glm::translate(mModelMatrix, housePos);
+	mModelMatrix = glm::scale(mModelMatrix, glm::vec3(10.0f,10.0f,10.0f));
+	spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mModelMatrix)));
+	spMain.SetUniform("matrices.modelMatrix", mModelMatrix);
+	houseModel.RenderModel();
+
 
 	// Render boat
 	glEnable(GL_CULL_FACE);
@@ -350,7 +378,7 @@ void RenderScene(LPVOID lpParam)
 	glBindVertexArray(uiVAOs[0]);
 	tTextures[1].BindTexture();
 	// Now it's gonna float in the air
-	glm::vec3 vPos = glm::vec3(0.0f, 10.0, 0.0f);
+	glm::vec3 vPos = glm::vec3(80.0f, 30.0, -100.0f);
 	mModelMatrix = glm::translate(glm::mat4(1.0), vPos);
 	mModelMatrix = glm::rotate(mModelMatrix, fGlobalAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 	spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mModelMatrix)));
@@ -365,6 +393,25 @@ void RenderScene(LPVOID lpParam)
 	glDrawArrays(GL_TRIANGLES, 42 + iTorusFaces * 3, iTorusFaces2 * 3);
 
 
+	//torus for each light
+	tTextures[2].BindTexture();
+	FOR(j,4){
+		CPointLight currentPL = j == 0 ? plLightWhite : j == 1 ? plLightRed : j == 2 ? plLightGreen : plLightBlue;
+		float scale = 0.5f;
+		FOR(i,3){
+			float newScale = i == 1 ? scale - 0.001f : i == 2 ? scale - 0.002f : scale;
+			mModelMatrix = glm::translate(glm::mat4(1.0), currentPL.vPosition);
+			if (i == 1) mModelMatrix = glm::rotate(mModelMatrix, 0.5f * PI, glm::vec3(0.0f, 1.0f, 0.0f));
+			if (i == 2) mModelMatrix = glm::rotate(mModelMatrix, 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+			mModelMatrix = glm::scale(mModelMatrix, glm::vec3(newScale,newScale,newScale));
+			spMain.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mModelMatrix)));
+			spMain.SetUniform("matrices.modelMatrix", &mModelMatrix);
+			spMain.SetUniform("vColor", glm::vec4(currentPL.vColor, 1.0f));
+			glDrawArrays(GL_TRIANGLES, 42 + iTorusFaces * 3, iTorusFaces2 * 3);
+		}
+	}
+	//return color to normal
+	spMain.SetUniform("vColor", glm::vec4(1.0f,1.0f,1.0f,1.0f));
 
 	//moving boat
 	bool fwd = Keys::Key(VK_UP);
@@ -415,14 +462,39 @@ void RenderScene(LPVOID lpParam)
 		psPlume.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
 		psPlume.UpdateParticles(appMain.sof(1.0f));
 		psPlume.RenderParticles();
-
-		//psMainParticleSystem2.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
-		//psMainParticleSystem2.UpdateParticles(appMain.sof(1.0f));
-		//psMainParticleSystem2.RenderParticles();
 	}
-	cCamera.Update();
 
-	
+	if (renderFountain){
+		tTextures[5].BindTexture();
+		psSingingFountain.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
+		psSingingFountain.UpdateParticles(appMain.sof(1.0f));
+		psSingingFountain.RenderParticles();
+
+		//обновление цвета поющего фонтана
+		float colorDelta = appMain.sof(0.1f);
+		switch (fntCurrentColorUp){
+		case FNT_GREEN:
+			currentFountainColor.x = max(0.0f, currentFountainColor.x - colorDelta);
+			currentFountainColor.y = min(1.0f, currentFountainColor.y + colorDelta);
+			if (currentFountainColor.x == 0) fntCurrentColorUp = FNT_BLUE;
+			break;
+		case FNT_BLUE:
+			currentFountainColor.y = max(0.0f, currentFountainColor.y - colorDelta);
+			currentFountainColor.z = min(1.0f, currentFountainColor.z + colorDelta);
+			if (currentFountainColor.y == 0) fntCurrentColorUp = FNT_RED;
+			break;
+		case FNT_RED:
+			currentFountainColor.z = max(0.0f, currentFountainColor.z - colorDelta);
+			currentFountainColor.x = min(1.0f, currentFountainColor.x + colorDelta);
+			if (currentFountainColor.z == 0) fntCurrentColorUp = FNT_GREEN;
+			break;
+		}
+		psSingingFountain.SetGenColor(currentFountainColor);
+	}
+
+
+
+	cCamera.Update();
 	
 	//вывод информации
 	ftPrintAllInfo(oglControl);

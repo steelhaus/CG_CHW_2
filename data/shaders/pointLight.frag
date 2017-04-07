@@ -12,6 +12,8 @@ struct PointLight
 	float fConstantAtt;
 	float fLinearAtt;
 	float fExpAtt;
+
+	int bTurnedOn;
 };
 
 vec4 getPointLightColor(const PointLight ptLight, vec3 vWorldPos, vec3 vNormal);
@@ -20,6 +22,7 @@ vec4 getPointLightColor(const PointLight ptLight, vec3 vWorldPos, vec3 vNormal);
 
 vec4 getPointLightColor(const PointLight ptLight, vec3 vWorldPos, vec3 vNormal)
 {
+	if (ptLight.bTurnedOn == 0) return vec4(0.0, 0.0, 0.0, 0.0);
 	vec3 vPosToLight = vWorldPos-ptLight.vPosition;
 	float fDist = length(vPosToLight);
 	vPosToLight = normalize(vPosToLight);

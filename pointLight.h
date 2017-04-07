@@ -15,8 +15,10 @@ public:
 	float fLinearAtt;
 	float fExpAtt;
 
+	int bTurnedOn;
+
 	void SetUniformData(CShaderProgram* spProgram, string sLightVarName);
 
 	CPointLight();
-	CPointLight(glm::vec3 a_vColor, glm::vec3 a_vPosition, float a_fAmbient, float a_fConstantAtt, float a_fLinearAtt, float a_fExpAtt);
+	CPointLight(glm::vec3 a_vColor, glm::vec3 a_vPosition, float a_fAmbient, float a_fConstantAtt, float a_fLinearAtt, float a_fExpAtt, int a_bTurnedOn);
 };

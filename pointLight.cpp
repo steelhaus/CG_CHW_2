@@ -12,9 +12,11 @@ CPointLight::CPointLight()
 	fConstantAtt = 0.3f;
 	fLinearAtt = 0.007f;
 	fExpAtt = 0.00008f;
+
+	bTurnedOn = 1;
 }
 
-CPointLight::CPointLight(glm::vec3 a_vColor, glm::vec3 a_vPosition, float a_fAmbient, float a_fConstantAtt, float a_fLinearAtt, float a_fExpAtt)
+CPointLight::CPointLight(glm::vec3 a_vColor, glm::vec3 a_vPosition, float a_fAmbient, float a_fConstantAtt, float a_fLinearAtt, float a_fExpAtt, int a_bTurnedOn)
 {
 	vColor = a_vColor;
 	vPosition = a_vPosition;
@@ -24,6 +26,8 @@ CPointLight::CPointLight(glm::vec3 a_vColor, glm::vec3 a_vPosition, float a_fAmb
 	fConstantAtt = a_fConstantAtt;
 	fLinearAtt = a_fLinearAtt;
 	fExpAtt = a_fExpAtt;
+
+	bTurnedOn = a_bTurnedOn;
 }
 
 // Sets all point light data.
@@ -39,5 +43,8 @@ void CPointLight::SetUniformData(CShaderProgram* spProgram, string sLightVarName
 	spProgram->SetUniform(sLightVarName+".fConstantAtt", fConstantAtt);
 	spProgram->SetUniform(sLightVarName+".fLinearAtt", fLinearAtt);
 	spProgram->SetUniform(sLightVarName+".fExpAtt", fExpAtt);
+
+	spProgram->SetUniform(sLightVarName+".bTurnedOn", bTurnedOn);
+	
 }
 
