@@ -14,7 +14,8 @@ uniform struct FogParameters
 	float fStart; // This is only for linear fog
 	float fEnd; // This is only for linear fog
 	float fDensity; // For exp and exp2 equation
-	int iEquation; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
+	int iEquation; // 0 = linear, 1 = exp, 2 = exp2
+	int bFogEnabled; //0 = disabled, 1 = enabled
 } fogParams;
 uniform int avrgSkyboxDistance;
 
@@ -28,9 +29,7 @@ float getFogFactor(FogParameters params, float fFogCoord)
 		fResult = exp(-params.fDensity*avrgSkyboxDistance);//*fFogCoord);
 	else if(params.iEquation == 2)
 		fResult = exp(-pow(params.fDensity*avrgSkyboxDistance, 2.0));//*fFogCoord, 2.0));
-		
-	fResult = 1.0-clamp(fResult, 0.0, 1.0);
-	
+	fResult = 1.0-clamp(fResult, 0.0, 1.0);	
 	return fResult;
 }
 
@@ -38,7 +37,7 @@ void main(){
 	vec4 vTexColor = texture2D(gSampler, vTexCoord);
 	vec4 vMixedColor = vTexColor*vColor;
 
-	if (fogParams.iEquation == 3){
+	if (fogParams.bFogEnabled == 0){
 		outputColor = vMixedColor;
 	} else {
 		float fFogCoord = abs(vEyeSpacePos.z/vEyeSpacePos.w);

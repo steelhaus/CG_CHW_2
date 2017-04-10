@@ -31,17 +31,23 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 		break;
 	case FT_INFO_FOG:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: FOG");
-		ftFont.printFormatted(20, yPos -= 50, 24, "Press L to activate Linear fog quation, E for exp fog, X for exp2 fog and N for disable");
-		ftFont.printFormatted(20, yPos -= 30, 24, "Current fog type is: %s", FogParameters::iFogEquation == 0 ? "Linear" : (FogParameters::iFogEquation == 1 ? "Exp" : (FogParameters::iFogEquation == 2 ? "Exp2" : "None")));
-		switch (FogParameters::iFogEquation){
-		case FOG_EQUATION_EXP:
-		case FOG_EQUATION_EXP2:
-			ftFont.printFormatted(20, yPos -= 50, 24, "Change Fog_density using keys J and U");
-			ftFont.printFormatted(20, yPos -= 30, 24, "Current Fog_density is: %.4f", FogParameters::fDensity);
+		ftFont.printFormatted(20, yPos -= 30, 24, "Press O to turn fog on/off. It is %s now", (cfWorldFog.bFogEnabled_view ? "ON" : "OFF"));
+		ftFont.printFormatted(20, yPos -= 30, 24, "Press G turn on/off fog gradually changing. It is %s now", (cfWorldFog.bGraduallyFogChanging ? "ON" : "OFF"));
+		ftFont.printFormatted(20, yPos -= 50, 24, "Press L to activate Linear fog quation, E for exp fog, X for exp2 fog");
+		ftFont.printFormatted(20, yPos -= 30, 24, "Current fog type is: %s", 
+			cfWorldFog.getFogEquationType() == FOG_TYPE_LINEAR ? "Linear" : (
+			cfWorldFog.getFogEquationType() == FOG_TYPE_EXP ? "Exp" : (
+			cfWorldFog.getFogEquationType() == FOG_TYPE_EXP2 ? "Exp2" : "Unknown")));		
+		switch (cfWorldFog.getFogEquationType()){
+		case FOG_TYPE_EXP:
+		case FOG_TYPE_EXP2:
+			ftFont.printFormatted(20, yPos -= 50, 24, "Change max Fog_density using keys J and U");
+			ftFont.printFormatted(20, yPos -= 30, 24, "Max Fog_density is: %.4f", cfWorldFog.getDensity());
+			ftFont.printFormatted(20, yPos -= 30, 24, "Current Fog_density is: %.4f", cfWorldFog.getCurrentDensity());
 			break;
-		case FOG_EQUATION_LINEAR:
+		case FOG_TYPE_LINEAR:
 			ftFont.printFormatted(20, yPos -= 50, 24, "Change Fog_start using keys J and U; Change Fog_end using keys K and I");
-			ftFont.printFormatted(20, yPos -= 30, 24, "Current Fog_start is: %.4f; Current Fog_end is %.4f", FogParameters::fStart, FogParameters::fEnd);
+			ftFont.printFormatted(20, yPos -= 30, 24, "Current Fog_start is: %.4f; Current Fog_end is %.4f", cfWorldFog.getStart(), cfWorldFog.getEnd());//FogParameters::fStart, FogParameters::fEnd);
 			break;
 		}
 		break;
@@ -57,9 +63,6 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 		ftFont.printFormatted(20, yPos -= 50, 24, "press Q to stop time or E to start time");
 		ftFont.printFormatted(20, yPos -= 30, 24, "press L to remote time forward or J to remote time backward (for 5 minutes)");
 		ftFont.printFormatted(20, yPos -= 30, 24, "press I to speed up inner time or K to slow down. Current state: %.0f seconds in one real second", tmInnerTime.fSecondsInRealSecond);
-
-		//float fr = tmInnerTime.getSkyboxColor().r;
-		//ftFont.printFormatted(20, yPos -= 30, 24, "gray shade is: %.4f", fr);
 		break;
 	case FT_PARTICLE:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: PARTICLES");
@@ -82,21 +85,35 @@ void ftCheckKeyPressing(){
 
 	switch(currentInfo::iInfo){
 	case FT_INFO_FOG:
-		if (Keys::Key('L')) FogParameters::iFogEquation = FOG_EQUATION_LINEAR; 
-		if (Keys::Key('E')) FogParameters::iFogEquation = FOG_EQUATION_EXP;
-		if (Keys::Key('X')) FogParameters::iFogEquation = FOG_EQUATION_EXP2; 
-		if (Keys::Key('N')) FogParameters::iFogEquation = FOG_DISABLED;
-		switch (FogParameters::iFogEquation){
-		case FOG_EQUATION_EXP:
-		case FOG_EQUATION_EXP2:
-			if (Keys::Key('J')) FogParameters::fDensity -= appMain.sof(0.01f);
-			if (Keys::Key('U')) FogParameters::fDensity += appMain.sof(0.01f);
+		if (Keys::Onekey('G')) cfWorldFog.bGraduallyFogChanging = !cfWorldFog.bGraduallyFogChanging;
+		
+		if (Keys::Key('L')) cfWorldFog.setEquationType(FOG_TYPE_LINEAR);
+		if (Keys::Key('E')) cfWorldFog.setEquationType(FOG_TYPE_EXP);
+		if (Keys::Key('X')) cfWorldFog.setEquationType(FOG_TYPE_EXP2);
+		if (Keys::Onekey('O')){
+			cfWorldFog.bFogEnabled_view = !cfWorldFog.bFogEnabled_view;
+			if (cfWorldFog.bFogEnabled == FOG_ENABLED_FALSE){ //если отключен, то включаем
+				cfWorldFog.bFogEnabled = FOG_ENABLED_TRUE; //включаем
+				cfWorldFog.fogStatus = FOG_STATUS_INCREASING; //запускаем возрастание
+			} else if (cfWorldFog.fogStatus == FOG_STATUS_STABLE){ //если не изменяется, значит максимальный
+				cfWorldFog.fogStatus = FOG_STATUS_DECREASING;
+			} else if (cfWorldFog.fogStatus == FOG_STATUS_INCREASING){ //возрастает сейчас, значит отправляем в убывание
+				cfWorldFog.fogStatus = FOG_STATUS_DECREASING;
+			} else if (cfWorldFog.fogStatus == FOG_STATUS_DECREASING){ //убывает сейчас, отправляем в возрастание
+				cfWorldFog.fogStatus = FOG_STATUS_INCREASING;
+			}
+		}
+		switch (cfWorldFog.getFogEquationType()){
+		case FOG_TYPE_EXP:
+		case FOG_TYPE_EXP2:
+			if (Keys::Key('J')) cfWorldFog.addDensity(-1.0f * appMain.sof(0.01f));
+			if (Keys::Key('U')) cfWorldFog.addDensity(appMain.sof(0.01f));
 			break;
-		case FOG_EQUATION_LINEAR:
-			if (Keys::Key('J')) FogParameters::fStart -= appMain.sof(15.0f);
-			if (Keys::Key('U')) FogParameters::fStart += appMain.sof(15.0f);
-			if (Keys::Key('K')) FogParameters::fEnd -= appMain.sof(15.0f);
-			if (Keys::Key('I')) FogParameters::fEnd += appMain.sof(15.0f);
+		case FOG_TYPE_LINEAR:
+			if (Keys::Key('J')) cfWorldFog.addStart(-1.0f * appMain.sof(15.0f));
+			if (Keys::Key('U')) cfWorldFog.addStart(appMain.sof(15.0f));
+			if (Keys::Key('K')) cfWorldFog.addEnd(-1.0f * appMain.sof(15.0f));
+			if (Keys::Key('I')) cfWorldFog.addEnd(appMain.sof(15.0f));
 			break;
 		}
 		break;
@@ -155,6 +172,4 @@ void ftCheckKeyPressing(){
 		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,-fDelta/2,0.0f), glm::vec3(0.0f,-fDelta/2,0.0f));
 		break;
 	}
-
-	
 }

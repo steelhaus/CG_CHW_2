@@ -21,6 +21,7 @@
 #include "freeTypeFont.h"
 #include "skybox.h"
 #include "Floor.h"
+#include "Fog.h"
 #include "time.h"
 #include "ObjModel.h"
 
@@ -54,6 +55,7 @@ CPointLight plLightWhite, plLightRed, plLightGreen, plLightBlue;
 CPointLight *currentPosessedLight = &plLightWhite;
 CTime tmInnerTime;
 CObjModel houseModel, fountainModel;
+CFog cfWorldFog;
 
 CFreeTypeFont ftFont;
 
@@ -89,18 +91,6 @@ void updatePlumePosition(bool forwardMoving){
 	psPlume.SetGeneratorPosition(boatPos - glm::vec3(0.0f,48.0f,0.0f) + vBoatForward * fPositionMult);
 }
 
-float fMaxFogDensity = 0.04f;
-float fFogSecondsForChage = 5.0f;
-float fFogDensityChangePerSecond = fMaxFogDensity / fFogSecondsForChage;
-bool bIncreasingFog = true;
-/*void gradualFogChanging(){
-	float fFogDensityDelta = appMain.sof(fFogDensityChangePerSecond);
-	if (bIncreasingFog)
-		FogParameters::fDensity += min(fFogDensityDelta,fMaxFogDensity);
-	else 
-		FogParameters::fDensity -= max(fFogDensityDelta,0.0f);
-}*/
-
 void updatePlumeRotation(float fSpreadAngle, bool forwardMoving){
 	float PI = float(atan(1.0)*4.0);
 	float fMainAngle = fBoatPitch + (forwardMoving ? 180.0f : 0.0f);
@@ -129,6 +119,7 @@ void InitScene(LPVOID lpParam)
 	float PI = float(atan(1.0)*4.0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	tmInnerTime = CTime();
+	cfWorldFog = CFog(0.023f, 10.0f, 75.0f, glm::vec4(0.7f, 0.7f, 0.7f, 1.0f), FOG_TYPE_EXP2, FOG_ENABLED_FALSE);
 
 	// Prepare all scene objects
 	vboSceneObjects.CreateVBO();
@@ -195,10 +186,10 @@ void InitScene(LPVOID lpParam)
 	// Creating spotlight, position and direction will get updated every frame, that's why zero vectors
 	slFlashLight = CSpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1, 15.0f, 0.017f);
 	slFlashLight.bOn = false;
-	plLightWhite = CPointLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
-	plLightRed = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(20.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
-	plLightGreen = CPointLight(glm::vec3(0.0f,1.0f,0.0f), glm::vec3(40.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
-	plLightBlue = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(60.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,1);
+	plLightWhite = CPointLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,0);
+	plLightRed = CPointLight(glm::vec3(1.0f,0.0f,0.0f), glm::vec3(20.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,0);
+	plLightGreen = CPointLight(glm::vec3(0.0f,1.0f,0.0f), glm::vec3(40.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,0);
+	plLightBlue = CPointLight(glm::vec3(0.0f,0.0f,1.0f), glm::vec3(60.0f,30.0f,0.0f),0.15f,0.3f,0.007f,0.00008f,0);
 
 	psPlume.InitalizeParticleSystem(); 
 	psPlume.SetGeneratorProperties( 
@@ -241,19 +232,19 @@ void InitScene(LPVOID lpParam)
 
 float fGlobalAngle;
 
-#define FOG_EQUATION_LINEAR		0
-#define FOG_EQUATION_EXP		1
-#define FOG_EQUATION_EXP2		2
-#define FOG_DISABLED			3
 
-namespace FogParameters
-{
-	float fDensity = 0.0f;//0.04f;
-	float fStart = 10.0f;
-	float fEnd = 75.0f;
-	glm::vec4 vFogColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
-	int iFogEquation = FOG_DISABLED; // 0 = linear, 1 = exp, 2 = exp2, 3 = none
-};
+//float fMaxFogDensity = 0.04f;
+//float fFogSecondsForChange = 5.0f;
+//float fFogDensityChangePerSecond = fMaxFogDensity / fFogSecondsForChange;
+//bool bIncreasingFog = true;
+/*void gradualFogChanging(){
+	float fFogDensityDelta = appMain.sof(fFogDensityChangePerSecond);
+	if (bIncreasingFog)
+		FogParameters::fDensity += min(fFogDensityDelta,fMaxFogDensity);
+	else 
+		FogParameters::fDensity -= max(fFogDensityDelta,0.0f);
+}*/
+
 #include "ftPrinter.h"
 // Renders whole scene.
 // lpParam - Pointer to anything you want.
@@ -268,9 +259,9 @@ void RenderScene(LPVOID lpParam)
 	glm::mat4 mModelMatrix, mView;
 	mView = cCamera.Look();
 	mModelMatrix = glm::translate(glm::mat4(1.0f), cCamera.vEye);
-	//if (FogParameters::iFogEquation != FOG_DISABLED){
-	//	gradualFogChanging();
-	//}
+	/*if (FogParameters::iFogEquation != FOG_DISABLED){
+		gradualFogChanging();
+	}*/
 	//Render skybox
 	spSkybox.UseProgram();
 	spSkybox.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
@@ -278,18 +269,10 @@ void RenderScene(LPVOID lpParam)
 	spSkybox.SetUniform("matrices.modelMatrix", &mModelMatrix);
 	spSkybox.SetUniform("matrices.normalMatrix", glm::transpose(glm::inverse(mModelMatrix)));
 	spSkybox.SetUniform("vColor", tmInnerTime.getSkyboxColor());
-	//spSkybox.SetUniform("vColor", glm::vec4(1, 1, 1, 1));
 	spSkybox.SetUniform("gSampler", 0);	
 	//Fog
-	spSkybox.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
-	spSkybox.SetUniform("fogParams.vFogColor", FogParameters::vFogColor);
-	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR){
-		spSkybox.SetUniform("fogParams.fStart", FogParameters::fStart);
-		spSkybox.SetUniform("fogParams.fEnd", FogParameters::fEnd);
-	}
-	else {
-		spSkybox.SetUniform("fogParams.fDensity", FogParameters::fDensity);
-	}
+	cfWorldFog.updateFog(appMain.sof(1.0f));
+	cfWorldFog.setUniformVariables(&spSkybox, "fogParams");
 	spSkybox.SetUniform("avrgSkyboxDistance", 150);
 	CSskybox.renderSkybox();
 	//End render skybox
@@ -322,15 +305,7 @@ void RenderScene(LPVOID lpParam)
 	plLightBlue.SetUniformData(&spMain, "pointLight[3]");
 	dlSun.SetUniformData(&spMain, "sunLight");
 	//Fog
-	spMain.SetUniform("fogParams.iEquation", FogParameters::iFogEquation);
-	spMain.SetUniform("fogParams.vFogColor", FogParameters::vFogColor);
-	if(FogParameters::iFogEquation == FOG_EQUATION_LINEAR){
-		spMain.SetUniform("fogParams.fStart", FogParameters::fStart);
-		spMain.SetUniform("fogParams.fEnd", FogParameters::fEnd);
-	}
-	else {
-		spMain.SetUniform("fogParams.fDensity", FogParameters::fDensity);
-	}
+	cfWorldFog.setUniformVariables(&spMain, "fogParams");
 
 	//Scene objects	
 	spMain.SetUniform("vColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
