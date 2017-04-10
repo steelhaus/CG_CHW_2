@@ -67,7 +67,7 @@ private:
 
 bool PrepareShaderPrograms();
 
-#define NUMSHADERS 12
+#define NUMSHADERS 13
 
 extern CShader shShaders[NUMSHADERS];
 extern CShaderProgram spMain, spColor, spOrtho2D, spFont2D, spSkybox;

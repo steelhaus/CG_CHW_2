@@ -21,7 +21,7 @@ bool PrepareShaderPrograms()
 
 	string sShaderFileNames[] = {"main_shader.vert", "main_shader.frag", "dirLight.frag", "pointLight.frag",
 		"color.vert", "color.frag", "spotLight.frag",
-		"font2D.frag", "ortho2D.vert", "ortho2D.frag", "skybox.vert", "skybox.frag"
+		"font2D.frag", "ortho2D.vert", "ortho2D.frag", "skybox.vert", "skybox.frag", "fog.frag"
 	};
 
 	FOR(i, NUMSHADERS)
@@ -39,6 +39,7 @@ bool PrepareShaderPrograms()
 	spMain.AddShaderToProgram(&shShaders[2]);
 	spMain.AddShaderToProgram(&shShaders[3]);
 	spMain.AddShaderToProgram(&shShaders[6]);
+	spMain.AddShaderToProgram(&shShaders[12]);
 	spMain.LinkProgram();
 
 	if(!spMain.LinkProgram())return false;
@@ -61,6 +62,7 @@ bool PrepareShaderPrograms()
 	spSkybox.CreateProgram();
 	spSkybox.AddShaderToProgram(&shShaders[10]);
 	spSkybox.AddShaderToProgram(&shShaders[11]);
+	spSkybox.AddShaderToProgram(&shShaders[12]);
 	spSkybox.LinkProgram();
 
 	return true;
