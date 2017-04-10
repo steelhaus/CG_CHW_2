@@ -14,12 +14,12 @@
 
 class CFog{
 public:
-	CFog(float p_fDensity, float p_fStart, float p_fEnd, glm::vec4 p_vFogColor, int p_iFogEquation, int a_bFogEnabled);
+	CFog(float p_fDensity, float p_fStart, float p_fEnd, glm::vec4 &p_vFogColor, int p_iFogEquation, int a_bFogEnabled);
 	CFog();
 	void addDensity(float fDeltaDensity);
 	void addStart(float fDeltaStart); //for linear
 	void addEnd(float fDeltaEnd); //for linear
-	void setColor(glm::vec4 p_vFogColor);
+	void setColor(glm::vec4 &p_vFogColor);
 	void setEquationType(int p_iFogEquation);
 	void setUniformVariables(CShaderProgram* spProgram, string sFogParamsName);
 	void setUniformVariablesNames(string sDensity, string sStart, string sEnd, string sFogColor, string sFogEquation);

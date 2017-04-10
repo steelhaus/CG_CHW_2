@@ -1,12 +1,13 @@
 #include "common_header.h"
 #include "Fog.h"
 
-CFog::CFog(float p_fDensity, float p_fStart, float p_fEnd, glm::vec4 p_vFogColor, int p_iFogEquation, int p_bFogEnabled){
+CFog::CFog(float p_fDensity, float p_fStart, float p_fEnd, glm::vec4 &p_vFogColor, int p_iFogEquation, int p_bFogEnabled){
 	fFogMaxDensity = p_fDensity;
 	fDensity = 0.0f;
 	fStart = p_fStart;
 	fEnd = p_fEnd;
-	vFogColor = p_vFogColor;
+	//vFogColor = p_vFogColor;
+	vFogColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
 	iFogEquation = p_iFogEquation;
 	bFogEnabled = p_bFogEnabled;
 	bFogEnabled_view = p_bFogEnabled == FOG_ENABLED_TRUE;
@@ -54,7 +55,7 @@ void CFog::addStart(float fDeltaStart){
 void CFog::addEnd(float fDeltaEnd){
 	fEnd += fDeltaEnd;
 }
-void CFog::setColor(glm::vec4 p_vFogColor){
+void CFog::setColor(glm::vec4 &p_vFogColor){
 	vFogColor = p_vFogColor;
 }
 void CFog::setEquationType(int p_iFogEquation){
