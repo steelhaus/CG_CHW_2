@@ -28,6 +28,7 @@ void ftPrintAllInfo(COpenGLControl* oglControl){
 	switch(currentInfo::iInfo){
 	case FT_EMPTY:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: EMPTY");
+		ftFont.printFormatted(20, yPos -= 50, 24, "boat pitch is: %.4f", fBoatPitch);
 		break;
 	case FT_INFO_FOG:
 		ftFont.printFormatted(20, yPos -= 30, 24, "selected section is: FOG");
@@ -164,12 +165,22 @@ void ftCheckKeyPressing(){
 			currentInfo::secondsKeyTick = 0;
 		}
 		break;
+	case FT_EMPTY:
+		if (Keys::Onekey('I')) dlSun.vDirection = glm::vec3(0.0f,0.0f,1.0f);
+		if (Keys::Onekey('K')) dlSun.vDirection = glm::vec3(0.0f,0.0f,-1.0f);
+		if (Keys::Onekey('J')) dlSun.vDirection = glm::vec3(1.0f,0.0f,0.0f);
+		if (Keys::Onekey('L')) dlSun.vDirection = glm::vec3(-1.0f,0.0f,0.0f);
+		if (Keys::Onekey('U')) dlSun.vDirection = glm::vec3(0.0f,1.0f,0.0f);
+		if (Keys::Onekey('O')) dlSun.vDirection = glm::vec3(0.0f,-1.0f,0.0f);
+		if (Keys::Onekey('N')) dlSun.vDirection = glm::vec3(1.0f,-1.0f,1.0f);
+		break;
 	case FT_PARTICLE:
 		float fDelta = appMain.sof(20.0);
 		if (Keys::Key('L')) psSingingFountain.addGeneratorVelocity(glm::vec3(-fDelta,0.0f,-fDelta), glm::vec3(fDelta,0.0f,fDelta));
 		if (Keys::Key('J')) psSingingFountain.addGeneratorVelocity(glm::vec3(fDelta,0.0f,fDelta), glm::vec3(-fDelta,0.0f,-fDelta));
 		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,fDelta/2,0.0f), glm::vec3(0.0f,fDelta/2,0.0f));
-		if (Keys::Key('I')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,-fDelta/2,0.0f), glm::vec3(0.0f,-fDelta/2,0.0f));
+		if (Keys::Key('K')) psSingingFountain.addGeneratorVelocity(glm::vec3(0.0f,-fDelta/2,0.0f), glm::vec3(0.0f,-fDelta/2,0.0f));
 		break;
+	
 	}
 }

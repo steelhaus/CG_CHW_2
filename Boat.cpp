@@ -630,6 +630,7 @@ void Boat::addMast(float fTranslateX, float fTranslateY, float fTranslateZ, //tr
     transformMatrix = glm::rotate(transformMatrix, fYaw / 180.0f * PI, glm::vec3(0.0f,0.0f,1.0f));
     transformMatrix = glm::rotate(transformMatrix, fPitch / 180.0f * PI, glm::vec3(0.0f,1.0f,0.0f));
     transformMatrix = glm::rotate(transformMatrix, fRoll / 180.0f * PI, glm::vec3(1.0f,0.0f,0.0f));
+	glm::mat4 normalMatrix = glm::transpose(glm::inverse(transformMatrix));
 	while (iStep < iSubDiv) {
 		float fCurrAngle = iStep * fAddAngle;
 		float fNextAngle = fCurrAngle + fAddAngle;
@@ -655,12 +656,12 @@ void Boat::addMast(float fTranslateX, float fTranslateY, float fTranslateZ, //tr
 			glm::vec2(1.0f, fCurrTex) * fTexScale + fTubeTexOffset,
 			glm::vec2(0.0f, fNextTex) * fTexScale + fTubeTexOffset,
 			glm::vec2(1.0f, fNextTex) * fTexScale + fTubeTexOffset,
-		};
+		};		
 		glm::vec3 vNormalsTube[] = {
-			glm::vec3(fCurrSin, 0.0f, fCurrCos),
-			glm::vec3(fCurrSin, 0.0f, fCurrCos),
-			glm::vec3(fNextSin, 0.0f, fNextCos),
-			glm::vec3(fNextSin, 0.0f, fNextCos),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(-fCurrSin, 0.0f, fCurrCos, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(-fCurrSin, 0.0f, fCurrCos, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(-fNextSin, 0.0f, fNextCos, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(-fNextSin, 0.0f, fNextCos, 1.0f))),
 		};
         //triangles for tube sides
         glm::vec3 vTrianglePointsTube[] = {
@@ -680,8 +681,8 @@ void Boat::addMast(float fTranslateX, float fTranslateY, float fTranslateZ, //tr
 			glm::vec2(0.5f+fCurrCos/2.0f, 0.5f+fCurrSin/2.0f) * fTexScale + fCoverTexOffset,
         };
 		glm::vec3 vTriangleNormals[] = {
-			glm::vec3(0.0f,1.0f,0.0f),
-			glm::vec3(0.0f,-1.0f,0.0f)
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f,1.0f,0.0f,1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f,-1.0f,0.0f,1.0f)))
 		};
         //push new surfaces
         FOR(i, 4) {
