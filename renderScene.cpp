@@ -17,7 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Boat.h"
-#include "particle_system_tf.h"
+#include "particle_system.h"
 #include "freeTypeFont.h"
 #include "skybox.h"
 #include "Floor.h"

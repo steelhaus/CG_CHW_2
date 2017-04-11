@@ -1,6 +1,6 @@
 #include "common_header.h"
 
-#include "particle_system_tf.h"
+#include "particle_system.h"
 
 CParticleSystemTransformFeedback::CParticleSystemTransformFeedback()
 {
