@@ -35,7 +35,7 @@ void main()
 		vTexColor = vTexColor * m1 + vTexColor2 * m2;
 	}
 
-	vec4 vDirLightColor = getDirectionalLightColor(sunLight, vNormal);
+	vec4 vDirLightColor = getDirectionalLightColor(sunLight, vNormalized);
 	vec4 vSpotlightColor = GetSpotLightColor(spotLight, vWorldPos);
 	vec4 vPointlightColor = vec4(0.0,0.0,0.0,0.0);
 	for(int i = 0; i < lightsNumber; ++i){
