@@ -46,8 +46,16 @@ CFog::CFog(){
 }
 
 void CFog::addDensity(float fDeltaDensity){
-	fFogMaxDensity += fDeltaDensity;
+	fFogMaxDensity = max(fFogMaxDensity + fDeltaDensity, 0.0f); //не снижаем ниже нуля
 	fFogDensityDeltaPerSecond = fFogMaxDensity / fFogSecondsForChange;
+	//при изменении density необходимо решить, что делать с туманом
+	//если состояние тумана stable и он включен, значит необходимо установить состояние increasing
+	//тогда если density увеличился, то updateFog() будет постепенно увеличивать текущий density
+	//если же density уменьшился, то updateFog() возьмет min от текущего density и максимального,
+	//сответсвенно density установится в нормальный
+	if (fogStatus == FOG_STATUS_STABLE && bFogEnabled == FOG_ENABLED_TRUE){
+		fogStatus = FOG_STATUS_INCREASING;
+	} 
 }
 void CFog::addStart(float fDeltaStart){
 	fStart += fDeltaStart;
@@ -108,12 +116,20 @@ void CFog::updateFog(float fDeltaTime){
 	if (fogStatus == FOG_STATUS_STABLE) return; //либо достиг max, либо 0
 	float fFogDensityDelta = fDeltaTime * fFogDensityDeltaPerSecond;
 	if (fogStatus == FOG_STATUS_INCREASING){ 
-		fDensity = bGraduallyFogChanging ? min(fDensity + fFogDensityDelta, fFogMaxDensity) : fFogMaxDensity;
+		if (iFogEquation == FOG_TYPE_LINEAR){ //если линейный туман (он включается сразу, не постепенно), тогда установить сразу максимальный density для exp тумана
+			fDensity = fFogMaxDensity;
+		} else { //стандартное обновление тумана
+			fDensity = bGraduallyFogChanging ? min(fDensity + fFogDensityDelta, fFogMaxDensity) : fFogMaxDensity;
+		}
 		if (fDensity == fFogMaxDensity) { //увеличиваем до тех пор, пока не станет максимальным, тогда останавливаем
 			fogStatus = FOG_STATUS_STABLE; 
 		}
 	} else if (fogStatus == FOG_STATUS_DECREASING){
-		fDensity = bGraduallyFogChanging ? max(fDensity - fFogDensityDelta, 0.0f) : 0.0f;
+		if (iFogEquation == FOG_TYPE_LINEAR){ //если линейный туман включеН, когда происходит затухание, то сразу выключаем экспоненциальный
+			fDensity = 0.0f;
+		} else { //иначе стандартное затухание density для экспоненциального тумана
+			fDensity = bGraduallyFogChanging ? max(fDensity - fFogDensityDelta, 0.0f) : 0.0f;
+		}
 		if (fDensity == 0) { //уменьшаем до тех пор, пока не станет минимальным, тогда останавливаем
 			fogStatus = FOG_STATUS_STABLE;
 			bFogEnabled = FOG_ENABLED_FALSE;
