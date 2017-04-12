@@ -165,15 +165,6 @@ void ftCheckKeyPressing(){
 			currentInfo::secondsKeyTick = 0;
 		}
 		break;
-	case FT_EMPTY:
-		if (Keys::Onekey('I')) dlSun.vDirection = glm::vec3(0.0f,0.0f,1.0f);
-		if (Keys::Onekey('K')) dlSun.vDirection = glm::vec3(0.0f,0.0f,-1.0f);
-		if (Keys::Onekey('J')) dlSun.vDirection = glm::vec3(1.0f,0.0f,0.0f);
-		if (Keys::Onekey('L')) dlSun.vDirection = glm::vec3(-1.0f,0.0f,0.0f);
-		if (Keys::Onekey('U')) dlSun.vDirection = glm::vec3(0.0f,1.0f,0.0f);
-		if (Keys::Onekey('O')) dlSun.vDirection = glm::vec3(0.0f,-1.0f,0.0f);
-		if (Keys::Onekey('N')) dlSun.vDirection = glm::vec3(1.0f,-1.0f,1.0f);
-		break;
 	case FT_PARTICLE:
 		float fDelta = appMain.sof(20.0);
 		if (Keys::Key('L')) psSingingFountain.addGeneratorVelocity(glm::vec3(-fDelta,0.0f,-fDelta), glm::vec3(fDelta,0.0f,fDelta));

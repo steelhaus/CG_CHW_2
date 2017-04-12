@@ -182,11 +182,7 @@ void InitScene(LPVOID lpParam)
 	
 	cCamera = CFlyingCamera(glm::vec3(0.0f, 10.0f, 120.0f), glm::vec3(0.0f, 10.0f, 119.0f), glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.001f);
 	cCamera.SetMovingKeys('W', 'S', 'A', 'D');
-	//dlSun = CDirectionalLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,0.0f,0.0f), 0.5f, tmInnerTime.getSunAngle());
 	dlSun = CDirectionalLight(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.0f,0.0f,0.0f), 0.5f, tmInnerTime.getSunAngle());
-	dlSun.fAmbient = 0.0f;
-	dlSun.vDirection = glm::vec3(0.0f,0.0f,-1.0f);
-	dlSun.vColor = glm::vec3(1.0f,1.0f,1.0f);
 	// Creating spotlight, position and direction will get updated every frame, that's why zero vectors
 	slFlashLight = CSpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1, 15.0f, 0.017f);
 	slFlashLight.bOn = false;
@@ -439,7 +435,7 @@ void RenderScene(LPVOID lpParam)
 		psPlume.RenderParticles();
 	}
 
-	/*if (renderFountain){
+	if (renderFountain){
 		tTextures[5].BindTexture();
 		psSingingFountain.SetMatrices(oglControl->GetProjectionMatrix(), cCamera.vEye, cCamera.vView, cCamera.vUp);
 		psSingingFountain.UpdateParticles(appMain.sof(1.0f));
@@ -465,7 +461,7 @@ void RenderScene(LPVOID lpParam)
 			break;
 		}
 		psSingingFountain.SetGenColor(currentFountainColor);
-	}*/
+	}
 
 
 
