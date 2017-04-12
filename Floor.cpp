@@ -38,7 +38,7 @@ void CFloor::loadTextures(){
 	glm::vec2 vSandTex[4] = {
 		glm::vec2(0.0f,5.0f), glm::vec2(0.0f,0.0f), glm::vec2(50.0f,5.0f), glm::vec2(50.0f,0.0f)
 	};
-	glm::vec3 vSandNormal(0.0f,1.0f,0.0f);
+	glm::vec3 vSandNormal = glm::normalize(glm::vec3(0.0f,4.0f,1.0f));
 	FOR(i, sizeof(vSandVert)/sizeof(glm::vec3)){
 		vboFloor.AddData(&vSandVert[i], sizeof(glm::vec3));
 		vboFloor.AddData(&vSandTex[i], sizeof(glm::vec2));
