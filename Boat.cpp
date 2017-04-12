@@ -9,12 +9,12 @@ glm::vec3 vSkeletonVertices[] = {
 	glm::vec3(-0.15625,-1.0f,-0.51875f), glm::vec3(-0.1875f,-1.0f,-0.0625f), glm::vec3(0.15625,-1.0f,-0.51875f), glm::vec3(0.1875f,-1.0f,-0.0625f), 
 	glm::vec3(-0.1875f,-1.0f,-0.0625f), glm::vec3(-0.1875f,-1.0f,0.125f), glm::vec3(0.1875f,-1.0f,-0.0625f), glm::vec3(0.1875f,-1.0f,0.125f), 
 	glm::vec3(-0.1875f,-1.0f,0.125f), glm::vec3(-0.125f,-1.0f,0.2625f), glm::vec3(0.1875f,-1.0f,0.125f), glm::vec3(0.125f,-1.0f,0.2625f), 
-	glm::vec3(-0.125f,-1.0f,0.2625f), glm::vec3(-0.015f,-1.0f,0.3625f), glm::vec3(0.125f,-1.0f,0.2625f), glm::vec3(0.015f,-1.0f,0.3625f), 
+	glm::vec3(-0.125f,-1.0f,0.2625f), glm::vec3(-0.015f,-1.0f,0.3625f), glm::vec3(0.125f,-1.0f,0.2625f), glm::vec3(0.015f,-1.0f,0.3625f),
 	//boat left 1
 	glm::vec3(0.0f,-1.0f,-0.6875f), glm::vec3(0.0f,-0.925f,-0.7375f), glm::vec3(-0.0625f,-1.0f,-0.6875f), glm::vec3(-0.08125f,-0.925f,-0.7375f), 
 	glm::vec3(-0.0625f,-1.0f,-0.6875f), glm::vec3(-0.08125f,-0.925f,-0.7375f), glm::vec3(-0.125f,-1.0f,-0.625f), glm::vec3(-0.15625f,-0.925f,-0.675f), 
 	glm::vec3(-0.125f,-1.0f,-0.625f), glm::vec3(-0.15625f,-0.925f,-0.675f), glm::vec3(-0.15625,-1.0f,-0.51875f), glm::vec3(-0.20625f,-0.925f,-0.53125f), 
-	glm::vec3(-0.15625,-1.0f,-0.51875f), glm::vec3(-0.20625f,-0.925f,-0.53125f), glm::vec3(-0.1875f,-1.0f,-0.0625f), glm::vec3(-0.23125f,-0.925f,-0.05f), 
+	glm::vec3(-0.15625,-1.0f,-0.51875f), glm::vec3(-0.20625f,-0.925f,-0.53125f), glm::vec3(-0.1875f,-1.0f,-0.0625f), glm::vec3(-0.23125f,-0.925f,-0.05f),
 	glm::vec3(-0.1875f,-1.0f,-0.0625f), glm::vec3(-0.23125f,-0.925f,-0.05f), glm::vec3(-0.1875f,-1.0f,0.125f), glm::vec3(-0.23125f,-0.925f,0.1375f), 
 	glm::vec3(-0.1875f,-1.0f,0.125f), glm::vec3(-0.23125f,-0.925f,0.1375f), glm::vec3(-0.125f,-1.0f,0.2625f), glm::vec3(-0.175,-0.925f,0.3125f), 
 	glm::vec3(-0.125f,-1.0f,0.2625f), glm::vec3(-0.175,-0.925f,0.3125f), glm::vec3(-0.015f,-1.0f,0.3625f), glm::vec3(-0.015f,-0.925f,0.4375f),
@@ -168,10 +168,6 @@ glm::vec2 vSkeletonTexCoords[] = {
 	glm::vec2(0.0f,0.135f), glm::vec2(1.0f,0.05f), glm::vec2(0.0f,0.0f), glm::vec2(1.0f,0.0f),
 	glm::vec2(0.0f,0.0f), glm::vec2(0.0f,0.05f), glm::vec2(0.05f,0.0f), glm::vec2(0.05f,0.05f)
 };
-glm::vec3 vSkeletonNormals[] = {
-	glm::vec3(0.0f, 0.0f, 1.0f),
-};
-
 
 /*--------------------------------------skeleton borts --------------------------------------*/
 glm::vec3 vSkeletonBortsVertices[] = {	   
@@ -217,9 +213,6 @@ glm::vec2 vSkeletonBortsTexCoords[] = {
 	glm::vec2(0.5f,0.5f), glm::vec2(0.5f,0.725f), glm::vec2(1.0f,0.5f), glm::vec2(1.0f,0.725f),
 	glm::vec2(1.0f,0.5f), glm::vec2(1.0f,0.725f), glm::vec2(0.5f,0.5f), glm::vec2(0.5f,0.725f),
 	glm::vec2(0.5f,0.5f), glm::vec2(0.5f,0.725f), glm::vec2(0.0f,0.5f), glm::vec2(0.0f,0.725f),
-};
-glm::vec3 vSkeletonBortsNormals[] = {
-	glm::vec3(1.0f,1.0f,1.0f),
 };
 
 /*--------------------------------------skeleton deck --------------------------------------*/
@@ -291,43 +284,64 @@ Boat::Boat(){
 	//Пихаем данные о скелете
 	int vertVectorSize = sizeof(vSkeletonVertices) / sizeof(glm::vec3); //vert
 	int texVectorSize = sizeof(vSkeletonTexCoords) / sizeof(glm::vec2); //tex
-	int normVectorSize = sizeof(vSkeletonNormals) / sizeof(glm::vec3); //norm
 	float fScale = 0.5f; //четверть текстуры
 	glm::vec2 vTexShift(0.0f, 0.5f); //сдвиг (верхняя левая часть)
-	FOR(i, vertVectorSize){
-		vBoatVertices.push_back(vSkeletonVertices[i]);
-		vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonTexCoords[i] * fScale + vTexShift : vDefaultTexCoord);
-		vBoatNormals.push_back(i < normVectorSize ? vSkeletonNormals[i] : vDefaultNorm);
+	int indexes[] = {0,1,3,0,3,2};
+	for(int i = 0; i < vertVectorSize / 4; ++i){
+		glm::vec3 norms[2] = { //на каждые 4 вертекса генерируем две нормали - на два треугольника
+			glm::normalize(glm::cross(vSkeletonVertices[i*4+3]-vSkeletonVertices[i*4],vSkeletonVertices[i*4+1]-vSkeletonVertices[i*4])),
+			glm::normalize(glm::cross(vSkeletonVertices[i*4+2]-vSkeletonVertices[i*4],vSkeletonVertices[i*4+3]-vSkeletonVertices[i*4])),
+		};
+		for (int j = 0; j < 6; ++j){ //раскидываем 4 вертекса на два треугольника с собственными нормалями
+			vBoatVertices.push_back(vSkeletonVertices[i*4 + indexes[j]]);
+			vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonTexCoords[i*4 + indexes[j]] * fScale + vTexShift : vDefaultTexCoord);
+			vBoatNormals.push_back(norms[j/3]);
+		}
 	}
-	addIndicesForQuad(vertVectorSize / 4, false);
+	addIndicesForTriangle(vertVectorSize / 2, false);
 
+	
 	//Пихаем данные о бортах
 	vTexShift = glm::vec2(0.0f, 0.5f);
 	vertVectorSize = sizeof(vSkeletonBortsVertices) / sizeof(glm::vec3);
 	texVectorSize = sizeof(vSkeletonBortsTexCoords) / sizeof(glm::vec2);
-	normVectorSize = sizeof(vSkeletonBortsNormals) / sizeof(glm::vec3);
-	FOR(i, vertVectorSize){
-		vBoatVertices.push_back(vSkeletonBortsVertices[i]);
-		vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonBortsTexCoords[i] * fScale + vTexShift : vDefaultTexCoord);
-		vBoatNormals.push_back(i < normVectorSize ? vSkeletonBortsNormals[i] : vDefaultNorm);
+	for(int i = 0; i < vertVectorSize / 4; ++i){
+		glm::vec3 normal = glm::normalize(glm::cross(vSkeletonBortsVertices[i*4+3]-vSkeletonBortsVertices[i*4],vSkeletonBortsVertices[i*4+1]-vSkeletonBortsVertices[i*4]));
+		for (int j = 0; j < 4; ++j){
+			vBoatVertices.push_back(vSkeletonBortsVertices[i*4 + j]);
+			vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonBortsTexCoords[i*4 + j] * fScale + vTexShift : vDefaultTexCoord);
+			vBoatNormals.push_back(normal);
+		}
+		int mapping[4] = {2,3,0,1}; //маппинг вертексов для обратной стороны прямоугольника
+		for (int j = 0; j < 4; ++j){
+			vBoatVertices.push_back(vSkeletonBortsVertices[i*4 + mapping[j]]);
+			vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonBortsTexCoords[i*4 + mapping[j]] * fScale + vTexShift : vDefaultTexCoord);
+			vBoatNormals.push_back(-1.0f * normal);
+		}
 	}
-	addIndicesForQuad(vertVectorSize / 4, true); //add two sided bort
+	addIndicesForQuad(2 * vertVectorSize / 4, false); //на каждые 4 вертекса получаем два прямоугольника - с двух сторон каждый
 
 	//Пихаем данные о палубе
 	vTexShift = glm::vec2(0.5f, 0.5f);
 	vertVectorSize = sizeof(vSkeletonDeckVertices) / sizeof(glm::vec3);
 	texVectorSize = sizeof(vSkeletonDeckTexCoords) / sizeof(glm::vec2);
-	normVectorSize = sizeof(vSkeletonDeckNormals) / sizeof(glm::vec3);
-	FOR(i, vertVectorSize){
-		vBoatVertices.push_back(vSkeletonDeckVertices[i]);
-		vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonDeckTexCoords[i] * fScale + vTexShift : vDefaultTexCoord);
-		vBoatNormals.push_back(i < normVectorSize ? vSkeletonDeckNormals[i] : vDefaultNorm);
+	for(int i = 0; i < vertVectorSize / 4; ++i){
+		glm::vec3 norms[2] = {
+			glm::normalize(glm::cross(vSkeletonDeckVertices[i*4+3]-vSkeletonDeckVertices[i*4],vSkeletonDeckVertices[i*4+1]-vSkeletonDeckVertices[i*4])),
+			glm::normalize(glm::cross(vSkeletonDeckVertices[i*4+2]-vSkeletonDeckVertices[i*4],vSkeletonDeckVertices[i*4+3]-vSkeletonDeckVertices[i*4])),
+		};
+		for (int j = 0; j < 6; ++j){
+			vBoatVertices.push_back(vSkeletonDeckVertices[i*4 + indexes[j]]);
+			vBoatTexCoords.push_back(i < texVectorSize ? vSkeletonDeckTexCoords[i*4 + indexes[j]] * fScale + vTexShift : vDefaultTexCoord);
+			vBoatNormals.push_back(norms[j/3]);
+		}
 	}
-	addIndicesForQuad(vertVectorSize / 4, false);
+	addIndicesForTriangle(vertVectorSize / 2, false);
 
 	//Пихаем данные о лесенках
 	addLadders();
 	addBoatSails();
+	
 }
 
 void Boat::generateWheel(
@@ -503,11 +517,6 @@ void Boat::addBoat(CVertexBufferObject &vboDest){
 		vboDest.AddData(&vBoatTexCoords[iBoatIndices[i]], sizeof(glm::vec2));
 		vboDest.AddData(&vBoatNormals[iBoatIndices[i]], sizeof(glm::vec3));
 	}
-	/*FOR(i,vBoatVertices.size()){
-		vboDest.AddData(&vBoatVertices[i], sizeof(glm::vec3));
-		vboDest.AddData(&vBoatTexCoords[i], sizeof(glm::vec2));
-		vboDest.AddData(&vBoatNormals[i], sizeof(glm::vec3));
-	}	*/
 }
 
 void Boat::addSail(float fTranslateX, float fTranslateY, float fTranslateZ,
