@@ -269,7 +269,24 @@ Boat::Boat(){
 	addMast(0.0f,-0.59f,-0.58f,
 		90.0f,0.0f,0.0f,0.0025f,0.11f,20,0.5f,glm::vec2(0.0f,0.5f), glm::vec2(0.5f,0.5f));
 	addMast(0.0f,-0.59f,-0.58f,
-		-45.0f,0.0f,0.0f,0.0025f,0.11f,20,0.5f,glm::vec2(0.0f,0.5f), glm::vec2(0.5f,0.5f));		
+		-45.0f,0.0f,0.0f,0.0025f,0.11f,20,0.5f,glm::vec2(0.0f,0.5f), glm::vec2(0.5f,0.5f));
+	glm::vec2* texCoords = new glm::vec2[24];
+	FOR(i,4){
+		texCoords[i*4] = glm::vec2(0.0f,0.1f);
+		texCoords[i*4+1] = glm::vec2(0.5f,0.1f);
+		texCoords[i*4+2] = glm::vec2(0.0f,0.2f);
+		texCoords[i*4+3] = glm::vec2(0.5f,0.2f);
+	}
+	for(int i = 4; i < 6; ++i){
+		texCoords[i*4] = glm::vec2(0.1f,0.1f);
+		texCoords[i*4+1] = glm::vec2(0.2f,0.1f);
+		texCoords[i*4+2] = glm::vec2(0.1f,0.2f);
+		texCoords[i*4+3] = glm::vec2(0.2f,0.2f);
+	}
+	addBalk(0.0f,-0.62f,-0.57f,
+		0.0f,0.0f,0.0f,
+		0.01f,0.01f,0.1f,
+		texCoords, 24, 0.5f, glm::vec2(0.0f,0.5f));
 
 	//Пихаем данные о скелете
 	int vertVectorSize = sizeof(vSkeletonVertices) / sizeof(glm::vec3); //vert
@@ -346,11 +363,6 @@ void Boat::generateWheel(
 			glm::vec3 vMid1 = vDir1*(fFullRadius-fWheelRadius/2), vMid2 = vDir2*(fFullRadius-fWheelRadius/2);
 			glm::vec3 vQuadPoints[] = 
 			{
-				
-				/*vMid1 + glm::vec3(0.0f, 0.0f, -fNextSineTube*fWheelRadius) + vDir1*fNextCosineTube*fWheelRadius,
-				vMid1 + glm::vec3(0.0f, 0.0f, -fSineTube*fWheelRadius) + vDir1*fCosineTube*fWheelRadius,
-				vMid2 + glm::vec3(0.0f, 0.0f, -fSineTube*fWheelRadius) + vDir2*fCosineTube*fWheelRadius,
-				vMid2 + glm::vec3(0.0f, 0.0f, -fNextSineTube*fWheelRadius) + vDir2*fNextCosineTube*fWheelRadius*/
 				glm::vec3(transform * glm::vec4(vMid1 + glm::vec3(0.0f, 0.0f, -fNextSineTube*fWheelRadius) + vDir1*fNextCosineTube*fWheelRadius, 1.0f)),
 				glm::vec3(transform * glm::vec4(vMid1 + glm::vec3(0.0f, 0.0f, -fSineTube*fWheelRadius) + vDir1*fCosineTube*fWheelRadius, 1.0f)),
 				glm::vec3(transform * glm::vec4(vMid2 + glm::vec3(0.0f, 0.0f, -fSineTube*fWheelRadius) + vDir2*fCosineTube*fWheelRadius, 1.0f)),
@@ -389,7 +401,6 @@ void Boat::generateWheel(
 		iStepsAround++;
 	}
 }
-
 
 void Boat::addLadders(){
 	float fStepLengthToHeightRatio = 1.3f;
@@ -516,6 +527,7 @@ void Boat::addSail(float fTranslateX, float fTranslateY, float fTranslateZ,
 	transform = glm::rotate(transform, fPitch/180.0f*PI, glm::vec3(0.0f,1.0f,0.0f));
 	transform = glm::rotate(transform, fRoll/180.0f*PI, glm::vec3(1.0f,0.0f,0.0f));
 	transform = glm::scale(transform, glm::vec3(1.0f,fScale,fScale));
+	glm::mat4 normalMatrix = glm::transpose(glm::inverse(transform));
 	while (iStep < iSubDiv){
 		float fCurrAngle = fStartAngle + iStep * fAddAngle;
 		float fNextAngle = fCurrAngle + fAddAngle;
@@ -528,11 +540,6 @@ void Boat::addSail(float fTranslateX, float fTranslateY, float fTranslateZ,
 		float fNextZ = fCenterCircleZ + fNextSine * fRadius;
 		float fCurrY = fCurrCosine * fRadius;
 		float fNextY = fNextCosine * fRadius;
-
-		/*float fCurrZ = fCenterCircleZ + sin(fCurrAngle/180.0f*PI) * fRadius;
-		float fNextZ = fCenterCircleZ + sin(fNextAngle/180.0f*PI) * fRadius;
-		float fCurrY = cos(fCurrAngle/180.0f*PI) * fRadius;
-		float fNextY = cos(fNextAngle/180.0f*PI) * fRadius;*/
 		float fTexScale = 0.5f;
 		glm::vec2 fTexTransform(0.0f, 0.0f);
 		glm::vec3 vQuadPoints[] = 
@@ -551,18 +558,24 @@ void Boat::addSail(float fTranslateX, float fTranslateY, float fTranslateZ,
 		};
 		glm::vec3 vNormals[] = 
 		{
-			glm::vec3(0.0f, fCurrCosine, fCurrSine),
-			glm::vec3(0.0f, fNextCosine, fNextSine),
-			glm::vec3(0.0f, fCurrCosine, fCurrSine),
-			glm::vec3(0.0f, fNextCosine, fNextSine),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f, fCurrCosine, fCurrSine, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f, fNextCosine, fNextSine, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f, fCurrCosine, fCurrSine, 1.0f))),
+			glm::normalize(glm::vec3(normalMatrix * glm::vec4(0.0f, fNextCosine, fNextSine, 1.0f))),
 		};
 		FOR(i,4){
 			vBoatVertices.push_back(vQuadPoints[i]);
 			vBoatTexCoords.push_back(vTexPoints[i]);
 			vBoatNormals.push_back(vNormals[i]);
 		}
+		//добавляем обратную сторону паруса с противонаправленными нормалями
+		FOR(i,4){
+			vBoatVertices.push_back(vQuadPoints[i < 2 ? i + 2 : i - 2]);
+			vBoatTexCoords.push_back(vTexPoints[i < 2 ? i + 2 : i - 2]);
+			vBoatNormals.push_back(-1.0f * vNormals[i < 2 ? i + 2 : i - 2]);
+		}
 		++iStep;
-        addIndicesForQuad(1, true);
+		addIndicesForQuad(2, false);
 	}
 }
 
@@ -577,6 +590,7 @@ void Boat::addBalk(float fTranslateX, float fTranslateY, float fTranslateZ,
     transformMatrix = glm::rotate(transformMatrix, fYaw / 180.0f * PI, glm::vec3(0.0f,0.0f,1.0f));
     transformMatrix = glm::rotate(transformMatrix, fPitch / 180.0f * PI, glm::vec3(0.0f,1.0f,0.0f));
     transformMatrix = glm::rotate(transformMatrix, fRoll / 180.0f * PI, glm::vec3(1.0f,0.0f,0.0f));
+	glm::mat4 normalMatrix = glm::transpose(glm::inverse(transformMatrix));
 	glm::vec3 vQuadVertices[] = {
 		glm::vec3(transformMatrix * glm::vec4(fWidth / -2.0f, fHeight / -2.0f, fLength / 2.0f, 1.0f)), //face	
 		glm::vec3(transformMatrix * glm::vec4(fWidth / -2.0f, fHeight / 2.0f, fLength / 2.0f, 1.0f)), //face
@@ -594,12 +608,12 @@ void Boat::addBalk(float fTranslateX, float fTranslateY, float fTranslateZ,
 		glm::vec2(1.0f, 1.0f) * fTexScale + fTexTransform
 	};
 	glm::vec3 vQuadNormals[] = {
-		glm::vec3(0.0f,0.0f,1.0f), //front
-		glm::vec3(0.0f,0.0f,-1.0f), //back
-		glm::vec3(1.0f,1.0f,0.0f), //right
-		glm::vec3(-1.0f,0.0f,0.0f), //left
-		glm::vec3(0.0f,1.0f,0.0f), //top
-		glm::vec3(0.0f,-1.0f,0.0f), //bottom
+		glm::vec3(normalMatrix * glm::vec4(0.0f,0.0f,1.0f,1.0f)), //front
+		glm::vec3(normalMatrix * glm::vec4(0.0f,0.0f,-1.0f,1.0f)), //back
+		glm::vec3(normalMatrix * glm::vec4(1.0f,1.0f,0.0f,1.0f)), //right
+		glm::vec3(normalMatrix * glm::vec4(-1.0f,0.0f,0.0f,1.0f)), //left
+		glm::vec3(normalMatrix * glm::vec4(0.0f,1.0f,0.0f,1.0f)), //top
+		glm::vec3(normalMatrix * glm::vec4(0.0f,-1.0f,0.0f,1.0f)), //bottom
 	};
 	unsigned int loadOrder[] = {
 		0, 1, 2, 3, 4, 5, 6, 7, //front, back
