@@ -233,21 +233,7 @@ void InitScene(LPVOID lpParam)
    houseModel.LoadModel("data\\models\\house\\house.obj", "house.mtl");
    fountainModel.LoadModel("data\\models\\fountain\\fountain.obj", "fountain.mtl");
 }
-
 float fGlobalAngle;
-
-
-//float fMaxFogDensity = 0.04f;
-//float fFogSecondsForChange = 5.0f;
-//float fFogDensityChangePerSecond = fMaxFogDensity / fFogSecondsForChange;
-//bool bIncreasingFog = true;
-/*void gradualFogChanging(){
-	float fFogDensityDelta = appMain.sof(fFogDensityChangePerSecond);
-	if (bIncreasingFog)
-		FogParameters::fDensity += min(fFogDensityDelta,fMaxFogDensity);
-	else 
-		FogParameters::fDensity -= max(fFogDensityDelta,0.0f);
-}*/
 
 #include "ftPrinter.h"
 // Renders whole scene.
@@ -263,9 +249,7 @@ void RenderScene(LPVOID lpParam)
 	glm::mat4 mModelMatrix, mView;
 	mView = cCamera.Look();
 	mModelMatrix = glm::translate(glm::mat4(1.0f), cCamera.vEye);
-	/*if (FogParameters::iFogEquation != FOG_DISABLED){
-		gradualFogChanging();
-	}*/
+
 	//Render skybox
 	spSkybox.UseProgram();
 	spSkybox.SetUniform("matrices.projMatrix", oglControl->GetProjectionMatrix());
@@ -316,9 +300,7 @@ void RenderScene(LPVOID lpParam)
 	spMain.SetUniform("matrices.modelMatrix", glm::mat4(1.0f));
 	spMain.SetUniform("matrices.normalMatrix", glm::mat4(1.0f));
 	// Render ground
-	//spMain.SetUniform("numTextures", 2);
 	cfFloor.renderFloor(spMain);
-	//spMain.SetUniform("numTextures", 1);
 
 
 	//tTextures[7].BindTexture();
@@ -496,8 +478,8 @@ void RenderScene(LPVOID lpParam)
 	//смена дня и ночи
 	if (enableDayNightSelfAlternation){ 
 		tmInnerTime.addTime(appMain.sof(1.0f));
-		//dlSun.fAngle = tmInnerTime.getSunAngle();
-		//dlSun.updateLightProperties();
+		dlSun.fAngle = tmInnerTime.getSunAngle();
+		dlSun.updateLightProperties();
 	}
 
 	if(Keys::Onekey(VK_ESCAPE))PostQuitMessage(0);
